@@ -14,7 +14,7 @@ export default function WelcomeScreen({ navigation }) {
         <Text style={styles.buttonText}>REGISTER</Text>
       </TouchableOpacity>
 
-      {/* ปุ่มใหม่เพื่อไปหน้า Home */}
+      {/* ปุ่มไปหน้า Home */}
       <TouchableOpacity style={styles.buttonHome} onPress={() => navigation.navigate('Home')}>
         <Text style={styles.buttonHomeText}>GO TO HOME</Text>
       </TouchableOpacity>
