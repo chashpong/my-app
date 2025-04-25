@@ -27,9 +27,6 @@ export default function App() {
         <Stack.Screen name="TaskList" component={TaskListScreen} />
        
 
-        
-
-        
       </Stack.Navigator>
     </NavigationContainer>
     

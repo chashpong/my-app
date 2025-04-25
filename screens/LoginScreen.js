@@ -8,9 +8,31 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   const handleSignIn = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
+    if (!email.trim() || !password.trim()) {
+      alert("Please enter email and password");
+      return;
+    }
+  
+    fetch('http:192.168.56.1:3000/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message === 'Login successful') {
+          alert('Login success!');
+          navigation.navigate('Home'); // ไปหน้า Home หลังจาก login
+        } else {
+          alert(data.message || 'Login failed');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error connecting to server');
+      });
   };
+  
 
   return (
     <View style={styles.container}>

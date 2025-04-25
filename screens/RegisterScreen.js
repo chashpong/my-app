@@ -10,11 +10,36 @@ export default function RegisterScreen() {
   const navigation = useNavigation();
 
   const handleRegister = () => {
-    console.log('Username:', username);
-    console.log('Email:', email);
-    console.log('Password:', password);
-    console.log('Confirm Password:', confirmPassword);
+    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      alert('Please fill in all fields');
+      return;
+    }
+  
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+  
+    fetch('http:192.168.56.1:3000/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message === 'Registered successfully') {
+          alert('Register success!');
+          navigation.navigate('Login');
+        } else {
+          alert(data.message || 'Register failed');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error connecting to server');
+      });
   };
+  
 
   return (
     <View style={styles.container}>

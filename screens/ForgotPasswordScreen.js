@@ -9,10 +9,36 @@ export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
 
   const handleReset = () => {
-    console.log('Email:', email);
-    console.log('Password:', password);
-    console.log('Confirm Password:', confirmPassword);
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+      alert('Please fill in all fields');
+      return;
+    }
+  
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+  
+    fetch('http:192.168.56.1:3000/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message === 'Password reset successfully') {
+          alert('Password reset success!');
+          navigation.navigate('Login');
+        } else {
+          alert(data.message || 'Reset failed');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error connecting to server');
+      });
   };
+  
 
   return (
     <View style={styles.container}>
