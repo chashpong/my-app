@@ -11,8 +11,6 @@ import WelcomeScreen from './screens/WelcomeScreen';
 
 
 
-
-
 const Stack = createNativeStackNavigator();
 
 export default function App() {
