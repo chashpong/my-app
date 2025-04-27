@@ -10,3 +10,16 @@ npx expo
 cd backend และrun
 node server.js
 // เปิด command prompt 2 อัน
+
+
+///////ฐานข้อมูลsql
+CREATE DATABASE IF NOT EXISTS clear_planner;
+
+USE clear_planner;
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(100),
+  email VARCHAR(100) UNIQUE,
+  password VARCHAR(255)
+);
