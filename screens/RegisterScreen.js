@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '../config';
+
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
@@ -8,6 +10,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigation = useNavigation();
+
 
   const handleRegister = () => {
     if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -20,7 +23,7 @@ export default function RegisterScreen() {
       return;
     }
   
-    fetch('http:192.168.56.1:3000/register', {
+    fetch(`${API_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password }),

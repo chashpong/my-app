@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '../config';
+
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -8,6 +10,7 @@ export default function ForgotPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigation = useNavigation();
 
+  
   const handleReset = () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       alert('Please fill in all fields');
@@ -19,7 +22,7 @@ export default function ForgotPasswordScreen() {
       return;
     }
   
-    fetch('http:192.168.56.1:3000/reset-password', {
+    fetch(`${API_URL}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

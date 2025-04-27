@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '../config';
+
+
+
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+
+  
 
   const handleSignIn = () => {
     if (!email.trim() || !password.trim()) {
@@ -13,7 +20,7 @@ export default function LoginScreen() {
       return;
     }
   
-    fetch('http:192.168.56.1:3000/login', {
+    fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
