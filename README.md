@@ -3,8 +3,8 @@
 //โหลดแตกไฟล์ใช้ได้เลย
 //ติดตั้งnpm 
 install -g expo
-npm install
-
+และnpm install
+//
 npx expo 
 //run postman
 node server.js
