@@ -9,3 +9,4 @@ npx expo
 //run postman
 cd backend และrun
 node server.js
+// เปิด command prompt 2 อัน
