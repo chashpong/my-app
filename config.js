@@ -18,5 +18,5 @@ const getBaseUrl = () => {
   }
 };
 
-
 export const API_URL = getBaseUrl();
+//เริ่มรันแอป ➡️ หา IP เครื่อง ➡️ เอา IP + Port ➡️ ได้ baseURL ➡️ ใช้ยิง API ง่าย ๆ
