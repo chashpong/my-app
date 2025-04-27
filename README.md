@@ -13,10 +13,9 @@ node server.js
 
 
 ///////ฐานข้อมูลsql
+//
 CREATE DATABASE IF NOT EXISTS clear_planner;
-
 USE clear_planner;
-
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(100),
