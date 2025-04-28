@@ -58,7 +58,7 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const toggleTaskDone = (weekId, taskIndex) => {
-    setWeeks(weeks.map(week =>
+    const updatedWeeks = weeks.map(week =>
       week.id === weekId
         ? {
             ...week,
@@ -67,28 +67,36 @@ export default function TaskListScreen({ route, navigation }) {
             )
           }
         : week
-    ));
+    );
+  
+    setWeeks(updatedWeeks);
+  
+    // ตรวจสอบว่าทุก task ใน week นี้ทำเสร็จหมดไหม
+    const updatedWeek = updatedWeeks.find(w => w.id === weekId);
+    if (updatedWeek && updatedWeek.tasks.length > 0 && updatedWeek.tasks.every(task => task.done)) {
+      alert('SUCCESSFUL');
+    }
   };
+  
 
   const renderWeekBox = ({ item }) => (
-    <View style={styles.weekBox}>
-  <View style={styles.weekHeader}>
-    <TouchableOpacity onPress={() => toggleSelectWeek(item.id)}>
-      <Ionicons
-        name={item.selected ? 'checkbox' : 'square-outline'}
-        size={20}
-        color={item.selected ? '#FF9800' : '#999'}
-      />
-    </TouchableOpacity>
-
-    <Text style={styles.weekTitle}>{item.title}</Text>
-
-    <TouchableOpacity onPress={() => openAddTask(item.id)}>
-      <Text style={styles.addButton}>＋</Text>
-    </TouchableOpacity>
-  </View>
-
-
+    <TouchableOpacity style={styles.weekBox} onPress={() => navigation.navigate('OneWeek', { weekTitle: item.title })}>
+      <View style={styles.weekHeader}>
+        <TouchableOpacity onPress={() => toggleSelectWeek(item.id)}>
+          <Ionicons
+            name={item.selected ? 'checkbox' : 'square-outline'}
+            size={20}
+            color={item.selected ? '#FF9800' : '#999'}
+          />
+        </TouchableOpacity>
+  
+        <Text style={styles.weekTitle}>{item.title}</Text>
+  
+        <TouchableOpacity onPress={() => openAddTask(item.id)}>
+          <Text style={styles.addButton}>＋</Text>
+        </TouchableOpacity>
+      </View>
+  
       {item.tasks.map((task, index) => (
         <View key={index} style={styles.taskItem}>
           <TouchableOpacity onPress={() => toggleTaskDone(item.id, index)}>
@@ -103,15 +111,17 @@ export default function TaskListScreen({ route, navigation }) {
           </Text>
         </View>
       ))}
-    </View>
+    </TouchableOpacity>
   );
+  
 
 
   return (
     <View style={styles.container}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
-  <Text style={styles.backText}>← Back</Text>
-</TouchableOpacity>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+
 
 
       <Text style={styles.title}>{folderName}</Text>
@@ -163,22 +173,23 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   backButton: {
-    marginTop: 10,
-  marginBottom: 10,
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    padding: 8,
+    borderRadius: 30,
+    zIndex: 10,
   },
-  backText: {
-    marginTop: 20, 
-    fontSize: 25,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginTop: 40,   // ✅ เพิ่ม marginTop เพื่อขยับลง
     marginBottom: 10,
     color: '#4E342E',
   },
+  
   grid: {
     justifyContent: 'center',
   },
