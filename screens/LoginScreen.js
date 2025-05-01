@@ -13,7 +13,6 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   
-
   const handleSignIn = () => {
     if (!email.trim() || !password.trim()) {
       alert("Please enter email and password");

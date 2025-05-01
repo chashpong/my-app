@@ -9,14 +9,15 @@ export default function OneWeekScreen({ route, navigation }) {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   const [tasksByDay] = useState({
-    Monday: [{ name: 'Math Homework', status: 'todo' }],
-    Tuesday: [{ name: 'Science Project', status: 'inprogress' }],
-    Wednesday: [{ name: 'English Essay', status: 'done' }],
+    Monday: [{ name: 'Math Homework', status: '' }],
+    Tuesday: [{ name: 'Science Project', status: '' }],
+    Wednesday: [{ name: 'English Essay', status: '' }],
     Thursday: [],
     Friday: [],
     Saturday: [],
     Sunday: [],
   });
+
 
   const countStatus = (status) => {
     let count = 0;
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#4E342E',
-    marginTop: 50,   // ✅ เพิ่มตรงนี้
+    marginTop: 50,  
     marginBottom: 20,
   },  
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },

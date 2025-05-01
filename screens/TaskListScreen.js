@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-
 
 export default function TaskListScreen({ route, navigation }) {
   const { folderName } = route.params || { folderName: 'TERM 1' };
 
   const [weeks, setWeeks] = useState([
-    { id: '1', title: 'WEEK 1', tasks: [], selected: false },
-    { id: '2', title: 'WEEK 2', tasks: [], selected: false },
-    
+   
   ]);
   
   const addWeek = () => {
@@ -23,11 +19,13 @@ export default function TaskListScreen({ route, navigation }) {
     };
     setWeeks([...weeks, newWeek]);
   };
+
   const toggleSelectWeek = (weekId) => {
     setWeeks(weeks.map(week =>
       week.id === weekId ? { ...week, selected: !week.selected } : week
     ));
   };
+
   const deleteSelectedWeeks = () => {
     const selectedCount = weeks.filter(week => week.selected).length;
     if (selectedCount === 0) {
@@ -71,29 +69,28 @@ export default function TaskListScreen({ route, navigation }) {
   
     setWeeks(updatedWeeks);
   
-    // ตรวจสอบว่าทุก task ใน week นี้ทำเสร็จหมดไหม
     const updatedWeek = updatedWeeks.find(w => w.id === weekId);
     if (updatedWeek && updatedWeek.tasks.length > 0 && updatedWeek.tasks.every(task => task.done)) {
       alert('SUCCESSFUL');
     }
   };
-  
 
   const renderWeekBox = ({ item }) => (
     <TouchableOpacity style={styles.weekBox} onPress={() => navigation.navigate('OneWeek', { weekTitle: item.title })}>
       <View style={styles.weekHeader}>
-        <TouchableOpacity onPress={() => toggleSelectWeek(item.id)}>
+        {/* checkbox moved to the top right corner */}
+        <TouchableOpacity onPress={() => toggleSelectWeek(item.id)} style={styles.checkboxContainer}>
           <Ionicons
             name={item.selected ? 'checkbox' : 'square-outline'}
             size={20}
             color={item.selected ? '#FF9800' : '#999'}
           />
         </TouchableOpacity>
-  
+
         <Text style={styles.weekTitle}>{item.title}</Text>
   
-        <TouchableOpacity onPress={() => openAddTask(item.id)}>
-          <Text style={styles.addButton}>＋</Text>
+        <TouchableOpacity onPress={() => openAddTask(item.id)} style={styles.addButton}>
+          <Text style={styles.addButtonText}>＋</Text>
         </TouchableOpacity>
       </View>
   
@@ -113,16 +110,12 @@ export default function TaskListScreen({ route, navigation }) {
       ))}
     </TouchableOpacity>
   );
-  
-
 
   return (
     <View style={styles.container}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-
-
+      </TouchableOpacity>
 
       <Text style={styles.title}>{folderName}</Text>
 
@@ -133,14 +126,15 @@ export default function TaskListScreen({ route, navigation }) {
         numColumns={2}
         contentContainerStyle={styles.grid}
       />
+
       <View style={styles.controlRow}>
         <TouchableOpacity style={styles.controlButton} onPress={addWeek}>
-            <Ionicons name="add" size={24} color="#fff" />
+          <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.controlButton} onPress={deleteSelectedWeeks}>
-            <Ionicons name="trash" size={24} color="#fff" />
+          <Ionicons name="trash" size={24} color="#fff" />
         </TouchableOpacity>
-    </View>
+      </View>
 
       {/* MODAL เพิ่มงาน */}
       <Modal visible={showModal} transparent animationType="slide">
@@ -156,14 +150,11 @@ export default function TaskListScreen({ route, navigation }) {
             <TouchableOpacity style={styles.modalButton} onPress={addTaskToWeek}>
               <Text style={styles.modalButtonText}>Add</Text>
             </TouchableOpacity>
-
-            
           </View>
         </View>
       </Modal>
     </View>
   );
-  
 }
 
 const styles = StyleSheet.create({
@@ -180,16 +171,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     zIndex: 10,
   },
-  
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 40,   // ✅ เพิ่ม marginTop เพื่อขยับลง
+    marginTop: 40,
     marginBottom: 10,
     color: '#4E342E',
   },
-  
   grid: {
     justifyContent: 'center',
   },
@@ -198,7 +187,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     margin: 10,
-    width: 150,
+    width: 150, // ขยายความกว้างของการ์ด
+    height: 150, // ขยายความสูงของการ์ด
     elevation: 2,
   },
   weekHeader: {
@@ -206,6 +196,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 5,
+    position: 'relative', // Make sure the checkbox stays within this container
+  },
+  checkboxContainer: {
+    position: 'absolute',
+    top: -8,
+    right: -5,
   },
   weekTitle: {
     fontWeight: 'bold',
@@ -213,6 +209,13 @@ const styles = StyleSheet.create({
   },
   addButton: {
     fontSize: 18,
+    color: '#E58C39',
+    position: 'absolute',
+    top: 100,
+    right: -5,
+  },
+  addButtonText: {
+    fontSize: 24,
     color: '#E58C39',
   },
   taskItem: {
@@ -272,5 +275,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 3,
   },
-  
 });

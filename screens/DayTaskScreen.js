@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import AddBlockModal from './AddBlockModal';
 import { useNavigation } from '@react-navigation/native';
 import { Accelerometer } from 'expo-sensors';
@@ -9,7 +8,7 @@ import { Accelerometer } from 'expo-sensors';
 export default function DayTaskScreen({ route }) {
   const { dayName } = route.params;
   const navigation = useNavigation();
-
+  
   const [myWork, setMyWork] = useState([]);
   const [addWork, setAddWork] = useState([
     { id: '1', name: 'START', type: 'text' },
@@ -49,6 +48,10 @@ export default function DayTaskScreen({ route }) {
     setMyWork([]);
   };
 
+  const handleShakeDelete = () => {
+    navigation.navigate('ShakeScreen');
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -66,6 +69,9 @@ export default function DayTaskScreen({ route }) {
             <View key={index} style={styles.jigsawBlock}>
               <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
               <Text style={styles.jigsawText}>{item.name}</Text>
+              {item.timer && (
+                <Text style={styles.timerText}>Time: {item.timer} mins</Text> // แสดงเวลาที่กำหนด
+              )}
               {/* ปุ่มลบ */}
               <TouchableOpacity
                 style={styles.deleteButton}
@@ -120,19 +126,21 @@ export default function DayTaskScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1, backgroundColor:'#E58C39', padding:20 },
-  backButton: { position:'absolute', top:40, left:16, padding:8, borderRadius:30, zIndex:10 },
-  title: { fontSize:24, fontWeight:'bold', textAlign:'center', marginTop:60, marginBottom:20, color:'#4E342E' },
-  row: { flexDirection:'row', flex:1 },
-  leftPanel: { flex:1, padding:10 },
-  rightPanel: { flex:1, padding:10, backgroundColor:'#FFF9C4', borderRadius:10 },
-  panelTitle: { fontSize:18, fontWeight:'bold', color:'#4E342E', marginBottom:10, textAlign:'center' },
+  container: { flex: 1, backgroundColor: '#E58C39', padding: 20 },
+  backButton: { position: 'absolute', top: 40, left: 16, padding: 8, borderRadius: 30, zIndex: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginTop: 60, marginBottom: 20, color: '#4E342E' },
+  row: { flexDirection: 'row', flex: 1 },
+  leftPanel: { flex: 1, padding: 10 },
+  rightPanel: { flex: 1, padding: 10, backgroundColor: '#FFF9C4', borderRadius: 10 },
+  panelTitle: { fontSize: 18, fontWeight: 'bold', color: '#4E342E', marginBottom: 10, textAlign: 'center' },
+
   jigsawBlock: {
     width: 100,
     height: 100,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: -28,
+    marginLeft: 10,
     position: 'relative',
   },
   jigsawImage: {
@@ -141,6 +149,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     resizeMode: 'contain',
   },
+
   jigsawText: {
     fontWeight: 'bold',
     color: '#4E342E',
@@ -154,10 +163,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 2,
   },
-  addButton: { backgroundColor:'#fff', padding:10, borderRadius:20, alignSelf:'center', marginTop:20 },
-  bottomRow: { flexDirection:'row', justifyContent:'space-around', marginTop:10 },
-  shakeButton: { backgroundColor:'#ddd', padding:10, borderRadius:10 },
-  shakeButtonText: { fontWeight:'bold', color:'#4E342E' },
-  doneButton: { backgroundColor:'#4CAF50', padding:10, borderRadius:10 },
-  doneButtonText: { fontWeight:'bold', color:'#fff' },
+  addButton: { backgroundColor: '#fff', padding: 10, borderRadius: 20, alignSelf: 'center', marginTop: 40 },
+  bottomRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 10 },
+  shakeButton: { backgroundColor: '#ddd', padding: 10, borderRadius: 10 },
+  shakeButtonText: { fontWeight: 'bold', color: '#4E342E' },
+  doneButton: { backgroundColor: '#4CAF50', padding: 10, borderRadius: 10 },
+  doneButtonText: { fontWeight: 'bold', color: '#fff' },
+
+  timerText: {
+    fontSize: 14,
+    color: '#4E342E',
+    fontStyle: 'italic',
+    marginTop: 5,
+  },
 });
