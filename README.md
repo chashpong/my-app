@@ -11,15 +11,8 @@
 
 ## การตั้งค่าโปรเจกต์
 
-### ขั้นตอนที่ 1: Clone โค้ดจาก Repository
 
-ทำการ clone โปรเจกต์จาก GitHub ไปยังเครื่องของคุณด้วยคำสั่ง:
-
-```bash
-git clone https://github.com/yourusername/clear-planner.git
-```
-
-### ขั้นตอนที่ 2: ตั้งค่า Frontend (Expo React Native)
+### ขั้นตอนที่ 1: ตั้งค่า Frontend (Expo React Native)
 
 1. **เข้าไปยังโฟลเดอร์โปรเจกต์**:
   
@@ -38,7 +31,7 @@ git clone https://github.com/yourusername/clear-planner.git
 
    Expo CLI จะเปิดแท็บเบราว์เซอร์ที่แสดง QR code ให้คุณสแกนโดยใช้ **Expo Go** บนอุปกรณ์มือถือของคุณหรือใช้อีมูเลเตอร์
 
-### ขั้นตอนที่ 3: ตั้งค่า Backend (Node.js กับ MySQL)
+### ขั้นตอนที่ 2: ตั้งค่า Backend (Node.js กับ MySQL)
 
 1. **เข้าไปยังโฟลเดอร์ backend**:
    ```bash
@@ -79,7 +72,7 @@ git clone https://github.com/yourusername/clear-planner.git
 
    backend server จะเริ่มต้นและสามารถเข้าถึงได้ที่ `http://localhost:3000/`
 
-### ขั้นตอนที่ 4: API Endpoints
+### ขั้นตอนที่ 3: API Endpoints
 
 API ต่อไปนี้สามารถใช้ได้ในแอปพลิเคชัน:
 
