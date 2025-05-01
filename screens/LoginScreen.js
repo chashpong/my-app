@@ -3,10 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { useNavigation } from '@react-navigation/native';
 import { API_URL } from '../config';
 
-
-
-
-
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +24,7 @@ export default function LoginScreen() {
       .then(data => {
         if (data.message === 'Login successful') {
           alert('Login success!');
-          navigation.navigate('Home'); // ไปหน้า Home หลังจาก login
+          navigation.navigate('TaskListScreen'); // ไปหน้า Home หลังจาก login
         } else {
           alert(data.message || 'Login failed');
         }

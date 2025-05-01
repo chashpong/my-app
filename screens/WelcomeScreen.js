@@ -14,6 +14,12 @@ export default function WelcomeScreen({ navigation }) {
         <Text style={styles.buttonText}>REGISTER</Text>
       </TouchableOpacity>
 
+      {/* ปุ่มไปหน้า Home */}
+      <TouchableOpacity style={styles.buttonHome} onPress={() => navigation.navigate('TaskListScreen')}>
+        <Text style={styles.buttonHomeText}>GO TO HOME</Text>
+      </TouchableOpacity>
+    
+
       
     </View>
   );

@@ -113,7 +113,7 @@ export default function TaskListScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 

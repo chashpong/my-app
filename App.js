@@ -1,9 +1,10 @@
 import React from 'react';
+import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { GestureHandlerRootView } from 'react-native-gesture-handler'; // ✅ import ตรงนี้
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Import หน้าต่างๆ ของคุณ
+// Import your screens
 import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
@@ -12,7 +13,7 @@ import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import TaskListScreen from './screens/TaskListScreen';
 import OneWeekScreen from './screens/OneWeekScreen';
 import DayTaskScreen from './screens/DayTaskScreen';
-import ShakeScreen from './screens/ShakeScreen'; // ต้อง import
+import ShakeScreen from './screens/ShakeScreen'; // Must import
 
 const Stack = createNativeStackNavigator();
 
@@ -26,11 +27,10 @@ export default function App() {
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="TaskList" component={TaskListScreen} />
+          <Stack.Screen name="TaskListScreen" component={TaskListScreen} /> 
           <Stack.Screen name="OneWeek" component={OneWeekScreen} />
           <Stack.Screen name="DayTask" component={DayTaskScreen} />
           <Stack.Screen name="ShakeScreen" component={ShakeScreen} />
-          
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
