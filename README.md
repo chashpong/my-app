@@ -148,3 +148,4 @@ npx expo build:ios
 
 **หากต้องการคำแนะนำเพิ่มเติม หรือมีคำถามอื่น ๆ, แจ้งมาได้เลยครับ!**
 
+expo install expo-notifications expo-permissions

@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // สำหรับไอคอน checkbox
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
   const [folders, setFolders] = useState([
     { id: '1', name: 'TERM 1', selected: false },
     { id: '2', name: 'TERM 2', selected: false },
-    { id: '3', name: 'TERM 3', selected: false },
+    
   ]);
   const [folderName, setFolderName] = useState('');
 
+  // ใช้ค่าคงที่ ไม่สลับคอลัมน์แบบ dynamic
+  const numColumns = 2;
+
   const addFolder = () => {
     if (!folderName.trim()) {
-      Alert.alert('Error', 'Please enter a folder name');
+      Alert.alert('Error', 'กรุณาใส่ชื่อโฟลเดอร์');
       return;
     }
     const newFolder = {
@@ -36,7 +38,7 @@ export default function HomeScreen({ navigation }) {
   const deleteSelectedFolders = () => {
     const selectedCount = folders.filter(folder => folder.selected).length;
     if (selectedCount === 0) {
-      Alert.alert('Notice', 'Please select folders to delete');
+      Alert.alert('แจ้งเตือน', 'โปรดเลือกโฟลเดอร์ที่ต้องการลบ');
       return;
     }
     setFolders(folders.filter(folder => !folder.selected));
@@ -54,32 +56,32 @@ export default function HomeScreen({ navigation }) {
           color="#FF9800"
         />
       </TouchableOpacity>
-  
+
       <TouchableOpacity
         style={styles.folderBox}
-        onPress={() => navigation.navigate('TaskList', { folderName: item.name })}
+        onPress={() => navigation.navigate('TaskListScreen', { folderName: item.name })}
       >
         <Text style={styles.folderIcon}>📁</Text>
         <Text style={styles.folderText}>{item.name}</Text>
       </TouchableOpacity>
     </View>
   );
-  
 
   return (
-    <SafeAreaView style={styles.container}>
-       <View style={styles.header}>
-    <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
-      <Ionicons name="arrow-back" size={24} color="#fff" />
-    </TouchableOpacity>
-    <Text style={styles.title}>วางแผนเรียน/ทำงาน</Text>
-  </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.title}>วางแผนเรียน/ทำงาน</Text>
+      </View>
 
       <FlatList
+        key={numColumns} // ✅ ป้องกัน render error เมื่อใช้ numColumns
         data={folders}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        numColumns={3}
+        numColumns={numColumns}
         contentContainerStyle={styles.grid}
       />
 
@@ -92,13 +94,13 @@ export default function HomeScreen({ navigation }) {
 
       <View style={styles.buttonRow}>
         <TouchableOpacity style={styles.circleButton} onPress={addFolder}>
-          <Text style={styles.circleButtonText}>➕</Text>
+          <Ionicons name="add" size={28} color="#FF9800" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.circleButton} onPress={deleteSelectedFolders}>
-          <Text style={styles.circleButtonText}>🗑</Text>
+          <Ionicons name="trash" size={28} color="#FF9800" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView >
+    </View>
   );
 }
 
@@ -113,7 +115,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  
   backButton: {
     padding: 8,
     marginRight: 10,
@@ -123,43 +124,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4E342E',
   },
-  
-  
   grid: {
     alignItems: 'center',
     paddingBottom: 20,
   },
-  folderWrapper: {
-    width: 90,
-    height: 90,
-    margin: 10,
-    position: 'relative',
+  // styles.folderWrapper:
+folderWrapper: {
+  width: '45%',
+  margin: '2.5%',
+  height: 140, // ✅ กำหนดความสูงตายตัว
+  borderRadius: 15,
+  backgroundColor: '#FFF8E1',
+  elevation: 3,
+  position: 'relative',
+},
+
+  folderBox: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
   },
   checkbox: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    zIndex: 1,
+    top: 6,
+    right: 6,
+    zIndex: 2,
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 2,
   },
-  folderBox: {
-    backgroundColor: '#FFF8E1',
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-  },
   folderIcon: {
-    fontSize: 32,
+    fontSize: 36,
   },
   folderText: {
-    fontSize: 12,
-    marginTop: 5,
+    fontSize: 14,
+    marginTop: 8,
     color: '#5D4037',
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   input: {
@@ -186,9 +188,5 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderColor: '#FF9800',
     borderWidth: 1,
-  },
-  circleButtonText: {
-    fontSize: 28,
-    color: '#FF9800',
   },
 });

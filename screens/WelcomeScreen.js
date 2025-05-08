@@ -15,7 +15,7 @@ export default function WelcomeScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* ปุ่มไปหน้า Home */}
-      <TouchableOpacity style={styles.buttonHome} onPress={() => navigation.navigate('TaskListScreen')}>
+      <TouchableOpacity style={styles.buttonHome} onPress={() => navigation.navigate('HomeScreen')}>
         <Text style={styles.buttonHomeText}>GO TO HOME</Text>
       </TouchableOpacity>
     

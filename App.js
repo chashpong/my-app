@@ -14,6 +14,7 @@ import TaskListScreen from './screens/TaskListScreen';
 import OneWeekScreen from './screens/OneWeekScreen';
 import DayTaskScreen from './screens/DayTaskScreen';
 import ShakeScreen from './screens/ShakeScreen'; // Must import
+import StatusTaskScreen from './screens/StatusTaskScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,12 +26,13 @@ export default function App() {
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="HomeScreen" component={HomeScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="TaskListScreen" component={TaskListScreen} /> 
           <Stack.Screen name="OneWeek" component={OneWeekScreen} />
           <Stack.Screen name="DayTask" component={DayTaskScreen} />
           <Stack.Screen name="ShakeScreen" component={ShakeScreen} />
+          <Stack.Screen name="StatusTask" component={StatusTaskScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
