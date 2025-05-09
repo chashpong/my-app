@@ -2,11 +2,35 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Modal, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect } from 'react';
+
 
 export default function TaskListScreen({ route, navigation }) {
   const { folderName } = route.params || { folderName: 'TERM 1' };
 
-  const [weeks, setWeeks] = useState([]);
+  const [weeks, setWeeks] = useState([
+  { id: 'w1', title: 'WEEK 1', tasks: [], selected: false },
+  { id: 'w2', title: 'WEEK 2', tasks: [], selected: false },
+ 
+]);
+
+
+  useEffect(() => {
+  if (route.params?.returnedTasks && route.params?.folderName) {
+    const newTasks = route.params.returnedTasks;
+    const targetFolder = route.params.folderName;
+
+    setWeeks(prevWeeks =>
+      prevWeeks.map(week =>
+        week.title === targetFolder
+          ? { ...week, tasks: [...week.tasks, ...newTasks] }
+          : week
+      )
+    );
+  }
+}, [route.params]);
+
+
 
   const addWeek = () => {
     const newId = Date.now().toString();
@@ -92,51 +116,54 @@ export default function TaskListScreen({ route, navigation }) {
     }
   };
   
+  
 
   const renderWeekBox = ({ item }) => (
-    <TouchableOpacity
-      style={styles.weekBox}
-      onPress={() =>
-        navigation.navigate('OneWeek', {
-          weekTitle: item.title,
-          tasks: item.tasks,
-        })
-      }
-    >
-      <View style={styles.weekHeader}>
-        <TouchableOpacity onPress={() => toggleSelectWeek(item.id)} style={styles.checkboxContainer}>
-          <Ionicons
-            name={item.selected ? 'checkbox' : 'square-outline'}
-            size={20}
-            color={item.selected ? '#FF9800' : '#999'}
-          />
-        </TouchableOpacity>
+  <TouchableOpacity style={styles.weekBox}>
+    <View style={styles.weekHeader}>
+      <TouchableOpacity onPress={() => toggleSelectWeek(item.id)} style={styles.checkboxContainer}>
+        <Ionicons
+          name={item.selected ? 'checkbox' : 'square-outline'}
+          size={20}
+          color={item.selected ? '#FF9800' : '#999'}
+        />
+      </TouchableOpacity>
 
-        <Text style={styles.weekTitle}>{item.title}</Text>
+      <Text style={styles.weekTitle}>{item.title}</Text>
 
-        <TouchableOpacity onPress={() => openAddTask(item.id)} style={styles.addButton}>
-          <Text style={styles.addButtonText}>＋</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+  onPress={() =>
+    navigation.navigate('OneWeek', {
+      weekTitle: item.title,
+      tasks: item.tasks,
+    })
+  }
+  style={styles.addButton}
+>
+  <Text style={styles.addButtonText}>＋</Text>
+</TouchableOpacity>
 
-      <ScrollView style={styles.taskList} nestedScrollEnabled>
-        {item.tasks.map((task, index) => (
-          <View key={index} style={styles.taskItem}>
-            <TouchableOpacity onPress={() => toggleTaskDone(item.id, index)}>
-              <Ionicons
-                name={task.done ? 'checkbox' : 'square-outline'}
-                size={20}
-                color={task.done ? '#4CAF50' : '#999'}
-              />
-            </TouchableOpacity>
-            <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>
-              {task.name}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </TouchableOpacity>
-  );
+    </View>
+
+    <ScrollView style={styles.taskList} nestedScrollEnabled>
+      {item.tasks.map((task, index) => (
+        <View key={index} style={styles.taskItem}>
+          <TouchableOpacity onPress={() => toggleTaskDone(item.id, index)}>
+            <Ionicons
+              name={task.done ? 'checkbox' : 'square-outline'}
+              size={20}
+              color={task.done ? '#4CAF50' : '#999'}
+            />
+          </TouchableOpacity>
+          <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>
+            {task.name}
+          </Text>
+        </View>
+      ))}
+    </ScrollView>
+  </TouchableOpacity>
+);
+
 
   return (
     <View style={styles.container}>

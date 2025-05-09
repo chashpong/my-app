@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, Vibration } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, Vibration, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AddBlockModal from './AddBlockModal';
 import NotificationModal from './NotificationModal';
 import { useNavigation } from '@react-navigation/native';
 import { Accelerometer } from 'expo-sensors';
 import * as Notifications from 'expo-notifications';
-import { ScrollView } from 'react-native';
 
-// ตั้งค่าการแจ้งเตือนให้แสดงเมื่อแอปเปิดอยู่
+// ตั้งค่าให้แจ้งเตือนตอนแอปเปิดอยู่
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -27,15 +26,15 @@ export default function DayTaskScreen({ route }) {
     { id: '2', name: 'END', type: 'text' },
   ]);
   const [modalVisible, setModalVisible] = useState(false);
-
-  const [notificationSettings, setNotificationSettings] = useState({
-    advanceTime: 5,
-    unit: 'minutes',
-    mode: 'sound',
-  });
   const [notiModalVisible, setNotiModalVisible] = useState(false);
 
-  // ขอ permission การแจ้งเตือน
+  const [notificationSettings, setNotificationSettings] = useState({
+    advanceTime: 5, // คงไว้ตามโครงสร้างเดิม
+    unit: 'minutes',
+    mode: 'sound', // 'sound' หรือ 'shake'
+  });
+
+  // ขอสิทธิ์การแจ้งเตือน
   useEffect(() => {
     (async () => {
       const { status } = await Notifications.getPermissionsAsync();
@@ -45,7 +44,7 @@ export default function DayTaskScreen({ route }) {
     })();
   }, []);
 
-  // ลบงานเมื่อเขย่า
+  // ลบเมื่อเขย่า
   useEffect(() => {
     const subscription = Accelerometer.addListener(accelerometerData => {
       const totalForce = Math.sqrt(
@@ -65,35 +64,22 @@ export default function DayTaskScreen({ route }) {
     setAddWork(prev => [...prev, { ...newBlock, id: Date.now().toString() }]);
   };
 
-  const handleDrop = async (block) => {
-    const newBlock = { ...block, id: Date.now().toString() };
+  const mapDayToWeekTitle = (day) => {
+  const map = {
+    Monday: 'WEEK 1',
+    Tuesday: 'WEEK 2',
+    Wednesday: 'WEEK 3',
+    Thursday: 'WEEK 4',
+    Friday: 'WEEK 5',
+    Saturday: 'WEEK 6',
+    Sunday: 'WEEK 7',
+  };
+  return map[day] || day;
+};
 
-    if (block.timer) {
-      const ms = notificationSettings.unit === 'minutes'
-        ? notificationSettings.advanceTime * 60 * 1000
-        : notificationSettings.advanceTime * 60 * 60 * 1000;
 
-      const delay = Math.max(block.timer * 60 * 1000 - ms, 0);
-
-      if (notificationSettings.mode === 'sound') {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '⏰ Reminder',
-            body: `Your task "${block.name}" is starting soon.`,
-            sound: true,
-          },
-          trigger: {
-            seconds: delay / 1000,
-          },
-        });
-      } else if (notificationSettings.mode === 'shake') {
-        setTimeout(() => {
-          Vibration.vibrate();
-          Alert.alert('📳 Reminder', `Task "${block.name}" is coming up!`);
-        }, delay);
-      }
-    }
-
+  const handleDrop = (block) => {
+    const newBlock = { ...block, id: Date.now().toString(), started: false };
     setMyWork(prev => [...prev, newBlock]);
   };
 
@@ -102,16 +88,63 @@ export default function DayTaskScreen({ route }) {
   };
 
   const handleDone = () => {
-    Alert.alert('เสร็จแล้ว', 'บันทึกว่าวันนี้เสร็จเรียบร้อย ✅');
-    setMyWork([]);
-  };
+  const updated = myWork.map((task) => {
+    if (task.started || !task.timer) return task;
+
+    setTimeout(async () => {
+      if (notificationSettings.mode === 'sound') {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '✅ Task Complete',
+            body: `Your task "${task.name}" is finished.`,
+            sound: true,
+          },
+          trigger: null,
+        });
+      } else if (notificationSettings.mode === 'shake') {
+        Vibration.vibrate();
+        Alert.alert('⏰ DONE!', `Task "${task.name}" finished!`);
+      }
+
+      console.log('บันทึกข้อมูล:', {
+        name: task.name,
+        timer: task.timer,
+        finishedAt: new Date(),
+      });
+    }, task.timer * 1000);
+
+    return { ...task, started: true };
+  });
+
+  setMyWork(updated);
+
+  // ✅ ส่งข้อมูลกลับไป TaskListScreen
+ const returnedTasks = myWork
+  .filter(task => task.name !== 'START' && task.name !== 'END')
+  .map(task => ({
+    name: task.name,
+    done: task.started,
+    status: task.started ? 'done' : 'todo',
+  }));
+
+
+navigation.navigate('TaskListScreen', {
+  folderName: mapDayToWeekTitle(dayName), // เช่น Monday → WEEK 1
+  returnedTasks,
+});
+
+
+};
+
 
   return (
     <View style={styles.container}>
+      {/* ปุ่มย้อนกลับ */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 
+      {/* ปุ่มตั้งค่าแจ้งเตือน */}
       <TouchableOpacity onPress={() => setNotiModalVisible(true)} style={styles.notiButton}>
         <Ionicons name="notifications" size={24} color="#fff" />
       </TouchableOpacity>
@@ -119,50 +152,54 @@ export default function DayTaskScreen({ route }) {
       <Text style={styles.title}>{dayName}</Text>
 
       <View style={styles.row}>
+        {/* MY WORK */}
         <View style={styles.leftPanel}>
           <Text style={styles.panelTitle}>MY WORK</Text>
           <ScrollView>
-
-          {myWork.map((item, index) => (
-            <View key={index} style={styles.jigsawBlock}>
-              <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
-              <Text style={styles.jigsawText}>{item.name}</Text>
-              {item.timer && (
-                <Text style={styles.timerText}>Time: {item.timer} mins</Text>
-              )}
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteFromMyWork(item.id)}
-              >
-                <Ionicons name="trash" size={18} color="red" />
-              </TouchableOpacity>
-            </View>
-          ))}
+            {myWork.map((item, index) => (
+              <View key={index} style={styles.jigsawBlock}>
+                <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
+                <Text style={styles.jigsawText}>{item.name}</Text>
+                {item.timer && (
+                  <Text style={styles.timerText}>Time: {formatTime(item.timer)}</Text>
+                )}
+                {item.started && (
+                  <Text style={styles.timerText}>⏱ Running...</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteFromMyWork(item.id)}
+                >
+                  <Ionicons name="trash" size={18} color="red" />
+                </TouchableOpacity>
+              </View>
+            ))}
           </ScrollView>
         </View>
 
+        {/* ADD WORK */}
         <View style={styles.rightPanel}>
           <Text style={styles.panelTitle}>ADD WORK</Text>
           <ScrollView>
+            {addWork.map((block, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.jigsawBlock}
+                onPress={() => handleDrop(block)}
+              >
+                <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
+                <Text style={styles.jigsawText}>{block.name}</Text>
+              </TouchableOpacity>
+            ))}
 
-          {addWork.map((block, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.jigsawBlock}
-              onPress={() => handleDrop(block)}
-            >
-              <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
-              <Text style={styles.jigsawText}>{block.name}</Text>
+            <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+              <Ionicons name="add" size={24} color="#4E342E" />
             </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-            <Ionicons name="add" size={24} color="#4E342E" />
-          </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
 
+      {/* ปุ่มล่าง */}
       <View style={styles.bottomRow}>
         <TouchableOpacity style={styles.shakeButton}>
           <Text style={styles.shakeButtonText}>SHAKE DELETE</Text>
@@ -172,6 +209,7 @@ export default function DayTaskScreen({ route }) {
         </TouchableOpacity>
       </View>
 
+      {/* MODALS */}
       <AddBlockModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -187,6 +225,14 @@ export default function DayTaskScreen({ route }) {
     </View>
   );
 }
+
+// ฟังก์ชันช่วยแปลงวินาทีเป็น H:M:S
+const formatTime = (seconds) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${h}h ${m}m ${s}s`;
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#E58C39', padding: 20 },

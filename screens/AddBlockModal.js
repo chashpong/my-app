@@ -4,21 +4,35 @@ import { Modal, View, Text, TextInput, TouchableOpacity, Switch, StyleSheet } fr
 export default function AddBlockModal({ visible, onClose, onAdd }) {
   const [blockType, setBlockType] = useState('text');
   const [blockName, setBlockName] = useState('');
-  const [timerMinutes, setTimerMinutes] = useState('');
+  const [hours, setHours] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const [seconds, setSeconds] = useState('');
 
   const handleAdd = () => {
     if (!blockName.trim()) {
       alert('Please enter block name');
       return;
     }
+
+    let totalSeconds = null;
+    if (blockType === 'timer') {
+      const h = parseInt(hours) || 0;
+      const m = parseInt(minutes) || 0;
+      const s = parseInt(seconds) || 0;
+      totalSeconds = h * 3600 + m * 60 + s;
+    }
+
     const newBlock = {
       name: blockName,
       type: blockType,
-      timer: blockType === 'timer' ? parseInt(timerMinutes) : null, // Ensure it's a number
+      timer: blockType === 'timer' ? totalSeconds : null, // ใช้หน่วยเป็นวินาที
     };
+
     onAdd(newBlock);
     setBlockName('');
-    setTimerMinutes('');
+    setHours('');
+    setMinutes('');
+    setSeconds('');
     setBlockType('text');
     onClose();
   };
@@ -45,13 +59,29 @@ export default function AddBlockModal({ visible, onClose, onAdd }) {
           </View>
 
           {blockType === 'timer' && (
-            <TextInput
-              placeholder="Timer Minutes"
-              value={timerMinutes}
-              onChangeText={setTimerMinutes}
-              keyboardType="numeric"
-              style={styles.input}
-            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                placeholder="Hours"
+                value={hours}
+                onChangeText={setHours}
+                keyboardType="numeric"
+                style={[styles.input, { flex: 1 }]}
+              />
+              <TextInput
+                placeholder="Minutes"
+                value={minutes}
+                onChangeText={setMinutes}
+                keyboardType="numeric"
+                style={[styles.input, { flex: 1 }]}
+              />
+              <TextInput
+                placeholder="Seconds"
+                value={seconds}
+                onChangeText={setSeconds}
+                keyboardType="numeric"
+                style={[styles.input, { flex: 1 }]}
+              />
+            </View>
           )}
 
           <TouchableOpacity onPress={handleAdd} style={styles.createButton}>
