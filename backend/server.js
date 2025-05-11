@@ -110,6 +110,35 @@ app.delete('/users/:id', (req, res) => {
   });
 });
 
+
+
+app.post('/api/tasks', (req, res) => {
+  const { taskName, status, userId, weekId } = req.body;
+  console.log('BODY:', req.body); // ✅ เพิ่มบรรทัดนี้
+
+  const query = 'INSERT INTO tasks (task_name, status, user_id, week_id) VALUES (?, ?, ?, ?)';
+  db.query(query, [taskName, status, userId, weekId], (err, result) => {
+    if (err) {
+      console.error('SQL Error:', err); // ✅ ดู error แบบละเอียด
+      return res.status(500).send('Error adding task');
+    }
+    res.status(200).send('Task added successfully');
+  });
+});
+
+
+// API สำหรับเพิ่ม week
+app.post('/api/weeks', (req, res) => {
+  const { userId, weekName } = req.body;
+  const query = 'INSERT INTO weeks (user_id, week_name) VALUES (?, ?)';
+  db.query(query, [userId, weekName], (err, result) => {
+    if (err) {
+      return res.status(500).send('Error adding week');
+    }
+    res.status(200).send('Week added successfully');
+  });
+});
+
 app.listen(3000, () => {
   console.log('Server running on port 3000');
 });

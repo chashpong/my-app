@@ -55,12 +55,7 @@ export default function OneWeekScreen({ route, navigation }) {
           <Text style={styles.countText}>{getCount('todo')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.statusRow} onPress={() => goToStatusPage('inprogress')}>
-          <View style={[styles.statusColor, { backgroundColor: '#00BFFF' }]} />
-          <Text style={styles.statusText}>IN PROGRESS</Text>
-          <Text style={styles.countText}>{getCount('inprogress')}</Text>
-        </TouchableOpacity>
-
+        
         <TouchableOpacity style={styles.statusRow} onPress={() => goToStatusPage('done')}>
           <View style={[styles.statusColor, { backgroundColor: '#FF69B4' }]} />
           <Text style={styles.statusText}>DONE</Text>

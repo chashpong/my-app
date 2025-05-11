@@ -4,8 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
   const [folders, setFolders] = useState([
-    { id: '1', name: 'TERM 1', selected: false },
-    { id: '2', name: 'TERM 2', selected: false },
+    
     
   ]);
   const [folderName, setFolderName] = useState('');

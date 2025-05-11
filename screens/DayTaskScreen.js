@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, Vibration, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AddBlockModal from './AddBlockModal';
-import NotificationModal from './NotificationModal';
 import { useNavigation } from '@react-navigation/native';
 import { Accelerometer } from 'expo-sensors';
 import * as Notifications from 'expo-notifications';
+
+
+
+
 
 // ตั้งค่าให้แจ้งเตือนตอนแอปเปิดอยู่
 Notifications.setNotificationHandler({
@@ -26,9 +29,9 @@ export default function DayTaskScreen({ route }) {
     { id: '2', name: 'END', type: 'text' },
   ]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [notiModalVisible, setNotiModalVisible] = useState(false);
+  
 
-  const [notificationSettings, setNotificationSettings] = useState({
+  const [notificationSettings] = useState({
     advanceTime: 5, // คงไว้ตามโครงสร้างเดิม
     unit: 'minutes',
     mode: 'sound', // 'sound' หรือ 'shake'
@@ -65,27 +68,32 @@ export default function DayTaskScreen({ route }) {
   };
 
   const mapDayToWeekTitle = (day) => {
-  const map = {
-    Monday: 'WEEK 1',
-    Tuesday: 'WEEK 2',
-    Wednesday: 'WEEK 3',
-    Thursday: 'WEEK 4',
-    Friday: 'WEEK 5',
-    Saturday: 'WEEK 6',
-    Sunday: 'WEEK 7',
+    const map = {
+      Monday: 'WEEK 1',
+      Tuesday: 'WEEK 2',
+      Wednesday: 'WEEK 3',
+      Thursday: 'WEEK 4',
+      Friday: 'WEEK 5',
+      Saturday: 'WEEK 6',
+      Sunday: 'WEEK 7',
+    };
+    return map[day] || day;
   };
-  return map[day] || day;
-};
-
 
   const handleDrop = (block) => {
     const newBlock = { ...block, id: Date.now().toString(), started: false };
     setMyWork(prev => [...prev, newBlock]);
   };
 
+  // ฟังก์ชันการลบ Block จาก AddWork
+  const handleDeleteFromAddWork = (id) => {
+    setAddWork(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleDeleteFromMyWork = (id) => {
     setMyWork(prev => prev.filter(item => item.id !== id));
   };
+  
 
   const handleDone = () => {
   const updated = myWork.map((task) => {
@@ -111,30 +119,29 @@ export default function DayTaskScreen({ route }) {
         timer: task.timer,
         finishedAt: new Date(),
       });
-    }, task.timer * 1000);
+    }, task.timer * 1000); // แปลงจากวินาทีเป็นมิลลิวินาที
 
-    return { ...task, started: true };
+    // ตั้งค่าเริ่มต้นให้สถานะ done เป็น false และเปลี่ยนเป็น true เมื่อกด DONE
+    return { ...task, started: true, done: false }; // ใช้สถานะ `done: false`
   });
 
   setMyWork(updated);
 
-  // ✅ ส่งข้อมูลกลับไป TaskListScreen
- const returnedTasks = myWork
-  .filter(task => task.name !== 'START' && task.name !== 'END')
-  .map(task => ({
-    name: task.name,
-    done: task.started,
-    status: task.started ? 'done' : 'todo',
-  }));
+  // ส่งข้อมูลกลับไป TaskListScreen
+  const returnedTasks = updated
+    .filter(task => task.name !== 'START' && task.name !== 'END')  // กรอง START, END ออก
+    .map(task => ({
+      name: task.name,
+      done: task.done, // ส่งสถานะ done
+      status: task.done ? 'done' : 'todo',
+    }));
 
-
-navigation.navigate('TaskListScreen', {
-  folderName: mapDayToWeekTitle(dayName), // เช่น Monday → WEEK 1
-  returnedTasks,
-});
-
-
+  navigation.navigate('TaskListScreen', {
+    folderName: mapDayToWeekTitle(dayName),
+    returnedTasks, // ส่งข้อมูล task ที่ถูกต้อง
+  });
 };
+
 
 
   return (
@@ -144,10 +151,7 @@ navigation.navigate('TaskListScreen', {
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* ปุ่มตั้งค่าแจ้งเตือน */}
-      <TouchableOpacity onPress={() => setNotiModalVisible(true)} style={styles.notiButton}>
-        <Ionicons name="notifications" size={24} color="#fff" />
-      </TouchableOpacity>
+      
 
       <Text style={styles.title}>{dayName}</Text>
 
@@ -189,6 +193,14 @@ navigation.navigate('TaskListScreen', {
               >
                 <Image source={require('../assets/jigsaw.png')} style={styles.jigsawImage} />
                 <Text style={styles.jigsawText}>{block.name}</Text>
+                
+                {/* ปุ่มลบสำหรับ Block */}
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteFromAddWork(block.id)}
+                >
+                  <Ionicons name="trash" size={18} color="red" />
+                </TouchableOpacity>
               </TouchableOpacity>
             ))}
 
@@ -216,12 +228,7 @@ navigation.navigate('TaskListScreen', {
         onAdd={handleAddBlock}
       />
 
-      <NotificationModal
-        visible={notiModalVisible}
-        onClose={() => setNotiModalVisible(false)}
-        onSave={setNotificationSettings}
-        initialSettings={notificationSettings}
-      />
+      
     </View>
   );
 }
