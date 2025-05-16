@@ -9,7 +9,6 @@ import { API_URL } from '../config';
 
 export default function TaskListScreen({ route, navigation }) {
   const { folderName, userId, folderId } = route.params || {};
-
   const [weeks, setWeeks] = useState([]);
   const [newWeekName, setNewWeekName] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -18,10 +17,7 @@ export default function TaskListScreen({ route, navigation }) {
 
   useEffect(() => {
     axios.get(`${API_URL}/api/tasks`, {
-      params: {
-        userId,
-        folderId,
-      }
+      params: { userId, folderId }
     })
       .then(response => {
         const tasksFromDB = response.data;
@@ -48,7 +44,8 @@ export default function TaskListScreen({ route, navigation }) {
         setWeeks(transformedWeeks);
       })
       .catch(error => {
-        console.error('Error fetching tasks from backend:', error);
+        console.error('Error fetching tasks:', error);
+        Alert.alert('โหลดงานล้มเหลว');
       });
   }, [userId, folderId]);
 
@@ -77,12 +74,29 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const deleteSelectedWeeks = () => {
-    const selectedCount = weeks.filter(week => week.selected).length;
-    if (selectedCount === 0) {
-      Alert.alert('Notice', 'Please select weeks to delete');
+    const selectedWeeks = weeks.filter(week => week.selected);
+    if (selectedWeeks.length === 0) {
+      Alert.alert('แจ้งเตือน', 'โปรดเลือกสัปดาห์ที่ต้องการลบ');
       return;
     }
-    setWeeks(weeks.filter(week => !week.selected));
+
+    Promise.all(selectedWeeks.map(week =>
+      axios.delete(`${API_URL}/api/tasks/week`, {
+        params: {
+          weekName: week.title,
+          userId,
+          folderId,
+        }
+      })
+    ))
+      .then(() => {
+        Alert.alert('สำเร็จ', 'ลบงานในสัปดาห์เรียบร้อยแล้ว');
+        setWeeks(weeks.filter(week => !week.selected));
+      })
+      .catch(err => {
+        console.error('❌ Error deleting weeks:', err);
+        Alert.alert('Error', 'ไม่สามารถลบสัปดาห์ได้');
+      });
   };
 
   const openAddTask = (weekId) => {
@@ -92,29 +106,38 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const toggleTaskDone = (weekId, taskIndex) => {
-    setWeeks(weeks.map(week =>
-      week.id === weekId
-        ? {
-            ...week,
-            tasks: week.tasks.map((task, index) =>
-              index === taskIndex
-                ? {
-                    ...task,
-                    done: !task.done,
-                    status: task.done ? 'todo' : 'done',
-                  }
-                : task
-            ),
-          }
-        : week
-    ));
+  const updatedWeeks = weeks.map(week => {
+    if (week.id !== weekId) return week;
 
-    Alert.alert('SUCCESSFUL', 'Task status updated successfully!');
-  };
+    const updatedTasks = week.tasks.map((task, index) => {
+      if (index !== taskIndex) return task;
+
+      const newStatus = task.done ? 'todo' : 'done';
+
+      // ✅ อัปเดตฐานข้อมูลจริง
+      axios.put(`${API_URL}/api/tasks/${task.id}/status`, {
+        status: newStatus
+      })
+      .then(() => {
+        console.log(`✅ Task ${task.id} updated to ${newStatus}`);
+      })
+      .catch(err => {
+        console.error('❌ Error updating task status:', err);
+      });
+
+      return { ...task, done: !task.done, status: newStatus };
+    });
+
+    return { ...week, tasks: updatedTasks };
+  });
+
+  setWeeks(updatedWeeks);
+  Alert.alert('อัปเดตสำเร็จ', 'เปลี่ยนสถานะงานแล้ว');
+};
+
 
   const addTaskToWeek = () => {
     if (!newTask.trim()) return;
-
     setWeeks(weeks.map(week =>
       week.id === selectedWeekId
         ? {

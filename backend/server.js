@@ -181,6 +181,28 @@ app.put('/api/tasks/:id/status', (req, res) => {
   );
 });
 
+// DELETE /api/tasks/week?weekName=...&userId=...&folderId=...
+app.delete('/api/tasks/week', (req, res) => {
+  const { weekName, userId, folderId } = req.query;
+
+  if (!weekName || !userId || !folderId) {
+    return res.status(400).json({ message: 'Missing weekName or userId or folderId' });
+  }
+
+  db.query(
+    'DELETE FROM tasks WHERE week_name = ? AND user_id = ? AND folder_id = ?',
+    [weekName, userId, folderId],
+    (err, result) => {
+      if (err) {
+        console.error('Error deleting tasks by week:', err);
+        return res.status(500).json({ message: 'Error deleting tasks by week' });
+      }
+      res.status(200).json({ message: 'Week tasks deleted successfully' });
+    }
+  );
+});
+
+
 // 📥 GET /api/folders?userId=...
 app.get('/api/folders', (req, res) => {
   const { userId } = req.query;
