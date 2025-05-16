@@ -1,41 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Modal, Alert, ScrollView } from 'react-native';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  TextInput, StyleSheet, Modal, Alert, ScrollView
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import axios from 'axios';
+import { API_URL } from '../config';
 
 export default function TaskListScreen({ route, navigation }) {
-  const { folderName } = route.params || { folderName: 'TERM 1' };
+  const { folderName, userId, folderId } = route.params || {};
 
-  const [weeks, setWeeks] = useState([
-    { id: 'w1', title: 'WEEK 1', tasks: [], selected: false },
-    
-  ]);
-
-  
+  const [weeks, setWeeks] = useState([]);
+  const [newWeekName, setNewWeekName] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [newTask, setNewTask] = useState('');
+  const [selectedWeekId, setSelectedWeekId] = useState(null);
 
   useEffect(() => {
-  if (route.params?.returnedTasks && route.params?.folderName) {
-    const newTasks = route.params.returnedTasks;
-    const targetFolder = route.params.folderName;
+    axios.get(`${API_URL}/api/tasks`, {
+      params: {
+        userId,
+        folderId,
+      }
+    })
+      .then(response => {
+        const tasksFromDB = response.data;
 
-    const filteredTasks = newTasks.filter(task => task.name !== 'START' && task.name !== 'END'); // กรอง `START`, `END` ออก
+        const groupedByWeek = {};
+        tasksFromDB.forEach(task => {
+          const weekTitle = task.week_name || 'WEEK ?';
+          if (!groupedByWeek[weekTitle]) groupedByWeek[weekTitle] = [];
+          groupedByWeek[weekTitle].push({
+            id: task.id,
+            name: task.name,
+            status: task.status,
+            done: task.status === 'done',
+          });
+        });
 
-    setWeeks(prevWeeks =>
-      prevWeeks.map(week =>
-        week.title === targetFolder
-          ? { ...week, tasks: [...week.tasks, ...filteredTasks] }
-          : week
-      )
-    );
-  }
-}, [route.params]);
+        const transformedWeeks = Object.keys(groupedByWeek).map((weekTitle, index) => ({
+          id: `w${index + 1}`,
+          title: weekTitle,
+          tasks: groupedByWeek[weekTitle],
+          selected: false,
+        }));
 
+        setWeeks(transformedWeeks);
+      })
+      .catch(error => {
+        console.error('Error fetching tasks from backend:', error);
+      });
+  }, [userId, folderId]);
 
-
-
-  const [newWeekName, setNewWeekName] = useState('');
-
-  // เพิ่ม week ใหม่
   const addWeek = () => {
     if (!newWeekName.trim()) {
       Alert.alert('Notice', 'Please enter a valid week name');
@@ -45,23 +61,21 @@ export default function TaskListScreen({ route, navigation }) {
     const newId = Date.now().toString();
     const newWeek = {
       id: newId,
-      title: newWeekName,  // ชื่อที่ผู้ใช้กรอก
+      title: newWeekName,
       tasks: [],
       selected: false,
     };
 
     setWeeks([...weeks, newWeek]);
-    setNewWeekName('');  // รีเซ็ต input หลังจากเพิ่ม
+    setNewWeekName('');
   };
 
-  // เลือก week
   const toggleSelectWeek = (weekId) => {
     setWeeks(weeks.map(week =>
       week.id === weekId ? { ...week, selected: !week.selected } : week
     ));
   };
 
-  // ลบ week ที่เลือก
   const deleteSelectedWeeks = () => {
     const selectedCount = weeks.filter(week => week.selected).length;
     if (selectedCount === 0) {
@@ -71,11 +85,6 @@ export default function TaskListScreen({ route, navigation }) {
     setWeeks(weeks.filter(week => !week.selected));
   };
 
-  // เพิ่ม task ใน week
-  const [showModal, setShowModal] = useState(false);
-  const [newTask, setNewTask] = useState('');
-  const [selectedWeekId, setSelectedWeekId] = useState(null);
-
   const openAddTask = (weekId) => {
     setSelectedWeekId(weekId);
     setNewTask('');
@@ -83,37 +92,29 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const toggleTaskDone = (weekId, taskIndex) => {
-  setWeeks(weeks.map(week =>
-    week.id === weekId
-      ? {
-          ...week,
-          tasks: week.tasks.map((task, index) =>
-            index === taskIndex
-              ? {
-                  ...task,
-                  done: !task.done,
-                  status: task.done ? 'todo' : 'done',
-                }
-              : task
-          ),
-        }
-      : week
-  ));
+    setWeeks(weeks.map(week =>
+      week.id === weekId
+        ? {
+            ...week,
+            tasks: week.tasks.map((task, index) =>
+              index === taskIndex
+                ? {
+                    ...task,
+                    done: !task.done,
+                    status: task.done ? 'todo' : 'done',
+                  }
+                : task
+            ),
+          }
+        : week
+    ));
 
-  // เมื่อเปลี่ยนสถานะ task เสร็จแล้ว, แสดง alert
-  Alert.alert(
-    'SUCCESSFUL',
-    'Task status updated successfully!',
-    [{ text: 'OK', onPress: () => console.log('Task status confirmed!') }],
-    { cancelable: false }
-  );
-};
-
-
-  
+    Alert.alert('SUCCESSFUL', 'Task status updated successfully!');
+  };
 
   const addTaskToWeek = () => {
     if (!newTask.trim()) return;
+
     setWeeks(weeks.map(week =>
       week.id === selectedWeekId
         ? {
@@ -125,7 +126,6 @@ export default function TaskListScreen({ route, navigation }) {
     setShowModal(false);
   };
 
-  // แสดงข้อมูล task ในแต่ละ week
   const renderWeekBox = ({ item }) => (
     <TouchableOpacity style={styles.weekBox}>
       <View style={styles.weekHeader}>
@@ -140,17 +140,18 @@ export default function TaskListScreen({ route, navigation }) {
         <Text style={styles.weekTitle}>{item.title}</Text>
 
         <TouchableOpacity
-  onPress={() =>
-    navigation.navigate('OneWeek', {
-      weekTitle: item.title,
-      tasks: item.tasks,
-    })
-  }
-  style={styles.addButton}
->
-  <Text style={styles.addButtonText}>＋</Text>
-</TouchableOpacity>
-
+          onPress={() =>
+            navigation.navigate('OneWeek', {
+              weekTitle: item.title,
+              tasks: item.tasks,
+              userId,
+              folderId,
+            })
+          }
+          style={styles.addButton}
+        >
+          <Text style={styles.addButtonText}>＋</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.taskList} nestedScrollEnabled>
@@ -174,25 +175,23 @@ export default function TaskListScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.navigate('HomeScreen')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 
       <Text style={styles.title}>{folderName}</Text>
 
-      {/* แสดงรายการ week เป็นคอลัมน์เดียว */}
       <FlatList
         data={weeks}
         renderItem={renderWeekBox}
         keyExtractor={item => item.id}
-        numColumns={1}  // แสดง 1 คอลัมน์
+        numColumns={1}
         contentContainerStyle={styles.grid}
       />
 
-      {/* เพิ่ม Week ใหม่ */}
       <View style={styles.addWeekContainer}>
         <TextInput
-          style={[styles.weekInput, { flex: 1 }]}  // ขยายให้เต็มความกว้าง
+          style={[styles.weekInput, { flex: 1 }]}
           placeholder="Enter Week Name"
           value={newWeekName}
           onChangeText={setNewWeekName}
@@ -202,14 +201,12 @@ export default function TaskListScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* การควบคุมการลบ */}
       <View style={styles.controlRow}>
         <TouchableOpacity style={styles.controlButton} onPress={deleteSelectedWeeks}>
           <Ionicons name="trash" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* Modal สำหรับเพิ่ม task */}
       <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -235,7 +232,7 @@ const styles = StyleSheet.create({
   backButton: { position: 'absolute', top: 50, left: 16, padding: 8, borderRadius: 30, zIndex: 10 },
   title: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginTop: 40, marginBottom: 10, color: '#4E342E' },
   grid: { justifyContent: 'center', paddingHorizontal: 10 },
-  weekBox: { backgroundColor: '#FFF', borderRadius: 10, padding: 10, margin: 10,  width: '80%', height: 150, elevation: 2 },
+  weekBox: { backgroundColor: '#FFF', borderRadius: 10, padding: 10, margin: 10, width: '80%', height: 150, elevation: 2 },
   weekHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, position: 'relative' },
   checkboxContainer: { position: 'absolute', top: -8, right: -5 },
   weekTitle: { fontWeight: 'bold', color: '#5D4037' },

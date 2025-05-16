@@ -112,32 +112,120 @@ app.delete('/users/:id', (req, res) => {
 
 
 
+// ✅ เพิ่ม task ใหม่ (รองรับ week, day, user, folder)
 app.post('/api/tasks', (req, res) => {
-  const { taskName, status, userId, weekId } = req.body;
-  console.log('BODY:', req.body); // ✅ เพิ่มบรรทัดนี้
+  const { name, status, weekName, dayName, folderId, userId, timerSeconds } = req.body;
+  console.log('BODY:', req.body);
 
-  const query = 'INSERT INTO tasks (task_name, status, user_id, week_id) VALUES (?, ?, ?, ?)';
-  db.query(query, [taskName, status, userId, weekId], (err, result) => {
-    if (err) {
-      console.error('SQL Error:', err); // ✅ ดู error แบบละเอียด
-      return res.status(500).send('Error adding task');
+  const query = `
+    INSERT INTO tasks (name, status, week_name, day_name, folder_id, user_id, timer_seconds)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+  db.query(
+    query,
+    [name, status, weekName, dayName, folderId, userId, timerSeconds],
+    (err, result) => {
+      if (err) {
+        console.error('❌ SQL Error:', err);
+        return res.status(500).send('Error adding task');
+      }
+      res.status(200).send('Task added successfully');
     }
-    res.status(200).send('Task added successfully');
+  );
+});
+
+// ดึง tasks ตาม user, folder, week, day
+app.get('/api/tasks', (req, res) => {
+  const { userId, folderId, weekName, dayName } = req.query;
+
+  let query = 'SELECT * FROM tasks WHERE 1=1';
+  const params = [];
+
+  if (userId) {
+    query += ' AND user_id = ?';
+    params.push(userId);
+  }
+  if (folderId) {
+    query += ' AND folder_id = ?';
+    params.push(folderId);
+  }
+  if (weekName) {
+    query += ' AND week_name = ?';
+    params.push(weekName);
+  }
+  if (dayName) {
+    query += ' AND day_name = ?';
+    params.push(dayName);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error('❌ Fetch Error:', err);
+      return res.status(500).send('Error fetching tasks');
+    }
+    res.json(results);
+  });
+});
+
+app.put('/api/tasks/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  db.query(
+    'UPDATE tasks SET status = ? WHERE id = ?',
+    [status, id],
+    (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error updating status', error: err });
+      res.status(200).json({ message: 'Status updated successfully' });
+    }
+  );
+});
+
+// 📥 GET /api/folders?userId=...
+app.get('/api/folders', (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ message: 'Missing userId' });
+
+  db.query('SELECT * FROM folders WHERE user_id = ?', [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching folders:', err);
+      return res.status(500).json({ message: 'Error fetching folders' });
+    }
+    res.status(200).json(results);
+  });
+});
+
+// ➕ POST /api/folders
+app.post('/api/folders', (req, res) => {
+  const { name, userId } = req.body;
+  if (!name || !userId) return res.status(400).json({ message: 'Missing name or userId' });
+
+  db.query('INSERT INTO folders (name, user_id) VALUES (?, ?)', [name, userId], (err, result) => {
+    if (err) {
+      console.error('Error adding folder:', err);
+      return res.status(500).json({ message: 'Error adding folder' });
+    }
+    res.status(200).json({ message: 'Folder added successfully', folderId: result.insertId });
   });
 });
 
 
-// API สำหรับเพิ่ม week
-app.post('/api/weeks', (req, res) => {
-  const { userId, weekName } = req.body;
-  const query = 'INSERT INTO weeks (user_id, week_name) VALUES (?, ?)';
-  db.query(query, [userId, weekName], (err, result) => {
+// ❌ DELETE /api/folders/:id
+app.delete('/api/folders/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM folders WHERE id = ?', [id], (err, result) => {
     if (err) {
-      return res.status(500).send('Error adding week');
+      console.error('Error deleting folder:', err);
+      return res.status(500).json({ message: 'Error deleting folder' });
     }
-    res.status(200).send('Week added successfully');
+    res.status(200).json({ message: 'Folder deleted successfully' });
   });
 });
+
+
+
+
+
 
 app.listen(3000, () => {
   console.log('Server running on port 3000');

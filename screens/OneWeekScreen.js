@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function OneWeekScreen({ route, navigation }) {
-  const { weekTitle, tasks = [] } = route.params;
+  const { weekTitle, tasks = [], userId, folderId } = route.params;
 
   const getCount = (status) => tasks.filter(task => task.status === status).length;
 
@@ -15,7 +15,6 @@ export default function OneWeekScreen({ route, navigation }) {
     });
   };
 
-  // 🎨 สีตามวัน
   const dayColors = {
     Monday: '#FFFF00',
     Tuesday: '#FF69B4',
@@ -41,7 +40,12 @@ export default function OneWeekScreen({ route, navigation }) {
           <TouchableOpacity
             key={index}
             style={[styles.dayBox, { backgroundColor: dayColors[day] }]}
-            onPress={() => navigation.navigate('DayTask', { dayName: day })}
+            onPress={() => navigation.navigate('DayTask', {
+              dayName: day,
+              weekName: weekTitle,
+              userId,
+              folderId,
+            })}
           >
             <Text style={styles.dayText}>{day}</Text>
           </TouchableOpacity>
@@ -55,7 +59,6 @@ export default function OneWeekScreen({ route, navigation }) {
           <Text style={styles.countText}>{getCount('todo')}</Text>
         </TouchableOpacity>
 
-        
         <TouchableOpacity style={styles.statusRow} onPress={() => goToStatusPage('done')}>
           <View style={[styles.statusColor, { backgroundColor: '#FF69B4' }]} />
           <Text style={styles.statusText}>DONE</Text>
@@ -68,11 +71,25 @@ export default function OneWeekScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#E58C39', padding: 16 },
-  backButton: { position: 'absolute', top: 16, left: 16, padding: 8, borderRadius: 30, marginTop: 40, zIndex: 10 },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: '#4E342E', marginTop: 50, marginBottom: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
-  dayBox: { width: 140, height: 100, borderRadius: 15, margin: 10, justifyContent: 'center', alignItems: 'center' },
-  dayText: { fontSize: 16, fontWeight: 'bold', color: '#4E342E' },
+  backButton: {
+    position: 'absolute', top: 16, left: 16, padding: 8,
+    borderRadius: 30, marginTop: 40, zIndex: 10
+  },
+  title: {
+    fontSize: 24, fontWeight: 'bold',
+    textAlign: 'center', color: '#4E342E',
+    marginTop: 50, marginBottom: 20
+  },
+  grid: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center'
+  },
+  dayBox: {
+    width: 140, height: 100, borderRadius: 15,
+    margin: 10, justifyContent: 'center', alignItems: 'center'
+  },
+  dayText: {
+    fontSize: 16, fontWeight: 'bold', color: '#4E342E'
+  },
   statusSummary: { marginTop: 30 },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   statusColor: { width: 30, height: 10, borderRadius: 5, marginRight: 10 },

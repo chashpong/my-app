@@ -22,13 +22,15 @@ export default function LoginScreen() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.message === 'Login successful') {
-          alert('Login success!');
-          navigation.navigate('TaskListScreen'); // ไปหน้า Home หลังจาก login
-        } else {
-          alert(data.message || 'Login failed');
-        }
-      })
+  if (data.message === 'Login successful') {
+    alert('Login success!');
+    const userId = data.user.id;  // <<-- ได้มาจาก backend
+    navigation.navigate('HomeScreen', { userId });  // ส่ง userId ไปหน้าถัดไป
+  } else {
+    alert(data.message || 'Login failed');
+  }
+})
+
       .catch(err => {
         console.error(err);
         alert('Error connecting to server');

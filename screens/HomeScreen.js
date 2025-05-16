@@ -1,46 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { API_URL } from '../config';
 
-export default function HomeScreen({ navigation }) {
-  const [folders, setFolders] = useState([
-    
-    
-  ]);
+export default function HomeScreen({ route, navigation }) {
+  const { userId } = route.params; // ✅ ได้จาก LoginScreen
+  const [folders, setFolders] = useState([]);
   const [folderName, setFolderName] = useState('');
 
-  // ใช้ค่าคงที่ ไม่สลับคอลัมน์แบบ dynamic
-  const numColumns = 2;
+  useEffect(() => {
+    console.log('📥 userId:', userId);
+    loadFolders();
+  }, [userId]);
+
+  const loadFolders = () => {
+    axios.get(`${API_URL}/api/folders?userId=${userId}`)
+      .then(res => {
+        const folderList = res.data.map(folder => ({
+          id: folder.id.toString(),
+          name: folder.name,
+          selected: false,
+        }));
+        setFolders(folderList);
+      })
+      .catch(err => {
+        console.error('❌ Error loading folders:', err);
+        Alert.alert('Error', 'โหลดโฟลเดอร์ไม่สำเร็จ');
+      });
+  };
 
   const addFolder = () => {
     if (!folderName.trim()) {
       Alert.alert('Error', 'กรุณาใส่ชื่อโฟลเดอร์');
       return;
     }
-    const newFolder = {
-      id: Date.now().toString(),
-      name: folderName,
-      selected: false,
-    };
-    setFolders([...folders, newFolder]);
-    setFolderName('');
-  };
 
-  const toggleSelectFolder = (id) => {
-    setFolders(
-      folders.map(folder =>
-        folder.id === id ? { ...folder, selected: !folder.selected } : folder
-      )
-    );
+    axios.post(`${API_URL}/api/folders`, {
+      name: folderName,
+      userId: userId,
+    })
+      .then(() => {
+        setFolderName('');
+        loadFolders(); // โหลดใหม่
+      })
+      .catch(err => {
+        console.error('❌ Error adding folder:', err);
+        Alert.alert('Error', 'ไม่สามารถเพิ่มโฟลเดอร์ได้');
+      });
   };
 
   const deleteSelectedFolders = () => {
-    const selectedCount = folders.filter(folder => folder.selected).length;
-    if (selectedCount === 0) {
+    const selected = folders.filter(folder => folder.selected);
+    if (selected.length === 0) {
       Alert.alert('แจ้งเตือน', 'โปรดเลือกโฟลเดอร์ที่ต้องการลบ');
       return;
     }
-    setFolders(folders.filter(folder => !folder.selected));
+
+    Promise.all(
+      selected.map(folder =>
+        axios.delete(`${API_URL}/api/folders/${folder.id}`)
+      )
+    )
+      .then(() => loadFolders())
+      .catch(err => {
+        console.error('❌ Error deleting folders:', err);
+        Alert.alert('Error', 'ไม่สามารถลบโฟลเดอร์ได้');
+      });
+  };
+
+  const toggleSelectFolder = (id) => {
+    setFolders(folders.map(folder =>
+      folder.id === id ? { ...folder, selected: !folder.selected } : folder
+    ));
   };
 
   const renderItem = ({ item }) => (
@@ -58,7 +90,13 @@ export default function HomeScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.folderBox}
-        onPress={() => navigation.navigate('TaskListScreen', { folderName: item.name })}
+        onPress={() =>
+          navigation.navigate('TaskListScreen', {
+            folderName: item.name,
+            folderId: item.id,
+            userId: userId,
+          })
+        }
       >
         <Text style={styles.folderIcon}>📁</Text>
         <Text style={styles.folderText}>{item.name}</Text>
@@ -75,12 +113,17 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.title}>วางแผนเรียน/ทำงาน</Text>
       </View>
 
+      {folders.length === 0 && (
+        <Text style={{ textAlign: 'center', color: '#fff', marginTop: 20 }}>
+          ยังไม่มีโฟลเดอร์
+        </Text>
+      )}
+
       <FlatList
-        key={numColumns} // ✅ ป้องกัน render error เมื่อใช้ numColumns
         data={folders}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        numColumns={numColumns}
+        numColumns={2}
         contentContainerStyle={styles.grid}
       />
 
@@ -104,40 +147,20 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#E58C39',
-    padding: 20,
+  container: { flex: 1, backgroundColor: '#E58C39', padding: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  backButton: { padding: 8, marginRight: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#4E342E' },
+  grid: { alignItems: 'center', paddingBottom: 20 },
+  folderWrapper: {
+    width: '45%',
+    margin: '2.5%',
+    height: 140,
+    borderRadius: 15,
+    backgroundColor: '#FFF8E1',
+    elevation: 3,
+    position: 'relative',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4E342E',
-  },
-  grid: {
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  // styles.folderWrapper:
-folderWrapper: {
-  width: '45%',
-  margin: '2.5%',
-  height: 140, // ✅ กำหนดความสูงตายตัว
-  borderRadius: 15,
-  backgroundColor: '#FFF8E1',
-  elevation: 3,
-  position: 'relative',
-},
-
   folderBox: {
     flex: 1,
     justifyContent: 'center',
@@ -153,9 +176,7 @@ folderWrapper: {
     borderRadius: 10,
     padding: 2,
   },
-  folderIcon: {
-    fontSize: 36,
-  },
+  folderIcon: { fontSize: 36 },
   folderText: {
     fontSize: 14,
     marginTop: 8,
