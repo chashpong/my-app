@@ -119,6 +119,38 @@ API ต่อไปนี้สามารถใช้ได้ในแอป�
 
 ---
 
+mysql **ตั้งค่าฐานข้อมูล**:
+   - เริ่มต้น MySQL และเข้าสู่ MySQL 
+
+   - สร้างฐานข้อมูลและตารางสำหรับผู้ใช้:
+     ```sql folders – โฟลเดอร์ของผู้ใช้
+   CREATE TABLE folders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  user_id INT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
 
-expo install expo-notifications expo-permissions
+     ```
+mysql **ตั้งค่าฐานข้อมูล**:
+   - เริ่มต้น MySQL และเข้าสู่ MySQL 
+
+   - สร้างฐานข้อมูลและตารางสำหรับผู้ใช้:
+     ```sql tasks – รวมทุกอย่างไว้ในตารางเดียว (สัปดาห์, วัน, งาน)
+   CREATE TABLE tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  status ENUM('todo', 'done') DEFAULT 'todo',
+  week_name VARCHAR(20),   -- เช่น 'WEEK 1'
+  day_name ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+  folder_id INT,
+  user_id INT,
+  timer_seconds INT DEFAULT NULL,
+  FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+     ```
+
