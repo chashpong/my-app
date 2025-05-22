@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View, Text, FlatList, TextInput, TouchableOpacity,
+  StyleSheet, Alert, KeyboardAvoidingView,
+  TouchableWithoutFeedback, Keyboard, Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_URL } from '../config';
 
 export default function HomeScreen({ route, navigation }) {
-  const { userId } = route.params; // ✅ ได้จาก LoginScreen
+  const { userId } = route.params;
   const [folders, setFolders] = useState([]);
   const [folderName, setFolderName] = useState('');
 
@@ -42,7 +46,8 @@ export default function HomeScreen({ route, navigation }) {
     })
       .then(() => {
         setFolderName('');
-        loadFolders(); // โหลดใหม่
+        Keyboard.dismiss(); // ✅ ปิดแป้นพิมพ์
+        loadFolders();
       })
       .catch(err => {
         console.error('❌ Error adding folder:', err);
@@ -105,44 +110,51 @@ export default function HomeScreen({ route, navigation }) {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>วางแผนเรียน/ทำงาน</Text>
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.navigate('Welcome')} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.title}>วางแผนเรียน/ทำงาน</Text>
+          </View>
 
-      {folders.length === 0 && (
-        <Text style={{ textAlign: 'center', color: '#fff', marginTop: 20 }}>
-          ยังไม่มีโฟลเดอร์
-        </Text>
-      )}
+          {folders.length === 0 && (
+            <Text style={{ textAlign: 'center', color: '#fff', marginTop: 20 }}>
+              ยังไม่มีโฟลเดอร์
+            </Text>
+          )}
 
-      <FlatList
-        data={folders}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-      />
+          <FlatList
+            data={folders}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            contentContainerStyle={styles.grid}
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="ชื่อโฟลเดอร์ใหม่"
-        value={folderName}
-        onChangeText={setFolderName}
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="ชื่อโฟลเดอร์ใหม่"
+            value={folderName}
+            onChangeText={setFolderName}
+          />
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.circleButton} onPress={addFolder}>
-          <Ionicons name="add" size={28} color="#FF9800" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.circleButton} onPress={deleteSelectedFolders}>
-          <Ionicons name="trash" size={28} color="#FF9800" />
-        </TouchableOpacity>
-      </View>
-    </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.circleButton} onPress={addFolder}>
+              <Ionicons name="add" size={28} color="#FF9800" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.circleButton} onPress={deleteSelectedFolders}>
+              <Ionicons name="trash" size={28} color="#FF9800" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 

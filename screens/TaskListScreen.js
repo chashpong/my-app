@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity,
-  TextInput, StyleSheet, Modal, Alert, ScrollView
+  View, Text, FlatList, TextInput, TouchableOpacity,
+  StyleSheet, Modal, Alert, ScrollView, KeyboardAvoidingView,
+  Platform, TouchableWithoutFeedback, Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -21,7 +22,6 @@ export default function TaskListScreen({ route, navigation }) {
     })
       .then(response => {
         const tasksFromDB = response.data;
-
         const groupedByWeek = {};
         tasksFromDB.forEach(task => {
           const weekTitle = task.week_name || 'WEEK ?';
@@ -33,14 +33,12 @@ export default function TaskListScreen({ route, navigation }) {
             done: task.status === 'done',
           });
         });
-
         const transformedWeeks = Object.keys(groupedByWeek).map((weekTitle, index) => ({
           id: `w${index + 1}`,
           title: weekTitle,
           tasks: groupedByWeek[weekTitle],
           selected: false,
         }));
-
         setWeeks(transformedWeeks);
       })
       .catch(error => {
@@ -65,6 +63,7 @@ export default function TaskListScreen({ route, navigation }) {
 
     setWeeks([...weeks, newWeek]);
     setNewWeekName('');
+    Keyboard.dismiss(); // ปิดแป้นพิมพ์หลังกรอก
   };
 
   const toggleSelectWeek = (weekId) => {
@@ -106,44 +105,39 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const toggleTaskDone = (weekId, taskIndex) => {
-  const updatedWeeks = weeks.map(week => {
-    if (week.id !== weekId) return week;
+    const updatedWeeks = weeks.map(week => {
+      if (week.id !== weekId) return week;
+      const updatedTasks = week.tasks.map((task, index) => {
+        if (index !== taskIndex) return task;
+        const newStatus = task.done ? 'todo' : 'done';
 
-    const updatedTasks = week.tasks.map((task, index) => {
-      if (index !== taskIndex) return task;
+        axios.put(`${API_URL}/api/tasks/${task.id}/status`, {
+          status: newStatus
+        })
+          .then(() => {
+            console.log(`✅ Task ${task.id} updated to ${newStatus}`);
+          })
+          .catch(err => {
+            console.error('❌ Error updating task status:', err);
+          });
 
-      const newStatus = task.done ? 'todo' : 'done';
-
-      // ✅ อัปเดตฐานข้อมูลจริง
-      axios.put(`${API_URL}/api/tasks/${task.id}/status`, {
-        status: newStatus
-      })
-      .then(() => {
-        console.log(`✅ Task ${task.id} updated to ${newStatus}`);
-      })
-      .catch(err => {
-        console.error('❌ Error updating task status:', err);
+        return { ...task, done: !task.done, status: newStatus };
       });
-
-      return { ...task, done: !task.done, status: newStatus };
+      return { ...week, tasks: updatedTasks };
     });
 
-    return { ...week, tasks: updatedTasks };
-  });
-
-  setWeeks(updatedWeeks);
-  Alert.alert('อัปเดตสำเร็จ', 'เปลี่ยนสถานะงานแล้ว');
-};
-
+    setWeeks(updatedWeeks);
+    Alert.alert('อัปเดตสำเร็จ', 'เปลี่ยนสถานะงานแล้ว');
+  };
 
   const addTaskToWeek = () => {
     if (!newTask.trim()) return;
     setWeeks(weeks.map(week =>
       week.id === selectedWeekId
         ? {
-            ...week,
-            tasks: [...week.tasks, { name: newTask, done: false, status: 'todo' }],
-          }
+          ...week,
+          tasks: [...week.tasks, { name: newTask, done: false, status: 'todo' }],
+        }
         : week
     ));
     setShowModal(false);
@@ -159,9 +153,7 @@ export default function TaskListScreen({ route, navigation }) {
             color={item.selected ? '#FF9800' : '#999'}
           />
         </TouchableOpacity>
-
         <Text style={styles.weekTitle}>{item.title}</Text>
-
         <TouchableOpacity
           onPress={() =>
             navigation.navigate('OneWeek', {
@@ -197,56 +189,60 @@ export default function TaskListScreen({ route, navigation }) {
   );
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
 
-      <Text style={styles.title}>{folderName}</Text>
+          <Text style={styles.title}>{folderName}</Text>
 
-      <FlatList
-        data={weeks}
-        renderItem={renderWeekBox}
-        keyExtractor={item => item.id}
-        numColumns={1}
-        contentContainerStyle={styles.grid}
-      />
+          <FlatList
+            data={weeks}
+            renderItem={renderWeekBox}
+            keyExtractor={item => item.id}
+            numColumns={1}
+            contentContainerStyle={styles.grid}
+          />
 
-      <View style={styles.addWeekContainer}>
-        <TextInput
-          style={[styles.weekInput, { flex: 1 }]}
-          placeholder="Enter Week Name"
-          value={newWeekName}
-          onChangeText={setNewWeekName}
-        />
-        <TouchableOpacity onPress={addWeek} style={styles.addWeekButton}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.controlRow}>
-        <TouchableOpacity style={styles.controlButton} onPress={deleteSelectedWeeks}>
-          <Ionicons name="trash" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <Modal visible={showModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Task</Text>
+          <View style={styles.addWeekContainer}>
             <TextInput
-              style={styles.modalInput}
-              placeholder="Enter task"
-              value={newTask}
-              onChangeText={setNewTask}
+              style={[styles.weekInput, { flex: 1 }]}
+              placeholder="Enter Week Name"
+              value={newWeekName}
+              onChangeText={setNewWeekName}
             />
-            <TouchableOpacity style={styles.modalButton} onPress={addTaskToWeek}>
-              <Text style={styles.modalButtonText}>Add</Text>
+            <TouchableOpacity onPress={addWeek} style={styles.addWeekButton}>
+              <Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
+
+          <View style={styles.controlRow}>
+            <TouchableOpacity style={styles.controlButton} onPress={deleteSelectedWeeks}>
+              <Ionicons name="trash" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <Modal visible={showModal} transparent animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Add Task</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Enter task"
+                  value={newTask}
+                  onChangeText={setNewTask}
+                />
+                <TouchableOpacity style={styles.modalButton} onPress={addTaskToWeek}>
+                  <Text style={styles.modalButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
-      </Modal>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -265,7 +261,7 @@ const styles = StyleSheet.create({
   taskText: { fontSize: 14, color: '#000' },
   taskList: { maxHeight: 80, marginTop: 5 },
   addWeekContainer: { flexDirection: 'row', marginTop: 20 },
-  weekInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10, flex: 1 },
+  weekInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10 },
   addWeekButton: { backgroundColor: '#4E342E', borderRadius: 10, padding: 10, marginLeft: 10 },
   controlRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   controlButton: { backgroundColor: '#4E342E', borderRadius: 30, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 3 },

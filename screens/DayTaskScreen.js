@@ -28,11 +28,7 @@ export default function DayTaskScreen({ route }) {
   ]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const [notificationSettings] = useState({
-    advanceTime: 5,
-    unit: 'minutes',
-    mode: 'sound',
-  });
+  
 
   useEffect(() => {
     (async () => {
