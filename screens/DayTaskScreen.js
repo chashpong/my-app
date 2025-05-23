@@ -28,16 +28,23 @@ export default function DayTaskScreen({ route }) {
   ]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  
+  const notificationSettings = {
+  mode: 'sound', // หรือ 'shake'
+};
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        await Notifications.requestPermissionsAsync();
+
+ useEffect(() => {
+  (async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+      if (newStatus !== 'granted') {
+        Alert.alert('แจ้งเตือน', 'ไม่ได้รับสิทธิ์ให้ส่งการแจ้งเตือน');
       }
-    })();
-  }, []);
+    }
+  })();
+}, []);
+
 
   useEffect(() => {
     const subscription = Accelerometer.addListener(accelerometerData => {

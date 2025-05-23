@@ -200,9 +200,9 @@ const styles = StyleSheet.create({
   grid: { alignItems: 'center', paddingBottom: 20 },
   folderWrapper: {
     width: '45%',
-    margin: '3%',
+    margin: '2.5%',
     height: 140,
-    borderRadius: 20,
+    borderRadius: 15,
     backgroundColor: '#FFF8E1',
     elevation: 3,
     position: 'relative',

@@ -16,6 +16,11 @@ export default function TaskListScreen({ route, navigation }) {
   const [newTask, setNewTask] = useState('');
   const [selectedWeekId, setSelectedWeekId] = useState(null);
 
+  // 🔧 เพิ่มสำหรับแก้ชื่อ week
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editWeekIndex, setEditWeekIndex] = useState(null);
+  const [editWeekNewName, setEditWeekNewName] = useState('');
+
   useEffect(() => {
     axios.get(`${API_URL}/api/tasks`, {
       params: { userId, folderId }
@@ -63,7 +68,7 @@ export default function TaskListScreen({ route, navigation }) {
 
     setWeeks([...weeks, newWeek]);
     setNewWeekName('');
-    Keyboard.dismiss(); // ปิดแป้นพิมพ์หลังกรอก
+    Keyboard.dismiss();
   };
 
   const toggleSelectWeek = (weekId) => {
@@ -113,13 +118,9 @@ export default function TaskListScreen({ route, navigation }) {
 
         axios.put(`${API_URL}/api/tasks/${task.id}/status`, {
           status: newStatus
-        })
-          .then(() => {
-            console.log(`✅ Task ${task.id} updated to ${newStatus}`);
-          })
-          .catch(err => {
-            console.error('❌ Error updating task status:', err);
-          });
+        }).catch(err => {
+          console.error('❌ Error updating task status:', err);
+        });
 
         return { ...task, done: !task.done, status: newStatus };
       });
@@ -135,15 +136,40 @@ export default function TaskListScreen({ route, navigation }) {
     setWeeks(weeks.map(week =>
       week.id === selectedWeekId
         ? {
-          ...week,
-          tasks: [...week.tasks, { name: newTask, done: false, status: 'todo' }],
-        }
+            ...week,
+            tasks: [...week.tasks, { name: newTask, done: false, status: 'todo' }],
+          }
         : week
     ));
     setShowModal(false);
   };
 
-  const renderWeekBox = ({ item }) => (
+  // 🔧 แก้ชื่อสัปดาห์
+  const openEditWeekModal = (index) => {
+    setEditWeekIndex(index);
+    setEditWeekNewName(weeks[index].title);
+    setEditModalVisible(true);
+  };
+
+  const updateWeekName = () => {
+    const oldName = weeks[editWeekIndex].title;
+    axios.put(`${API_URL}/api/tasks/week-name`, {
+      oldWeekName: oldName,
+      newWeekName: editWeekNewName,
+      userId,
+      folderId
+    }).then(() => {
+      const updated = [...weeks];
+      updated[editWeekIndex].title = editWeekNewName;
+      setWeeks(updated);
+      setEditModalVisible(false);
+    }).catch(err => {
+      console.error('❌ Error updating week name:', err);
+      Alert.alert('Error', 'อัปเดตชื่อสัปดาห์ไม่สำเร็จ');
+    });
+  };
+
+  const renderWeekBox = ({ item, index }) => (
     <TouchableOpacity style={styles.weekBox}>
       <View style={styles.weekHeader}>
         <TouchableOpacity onPress={() => toggleSelectWeek(item.id)} style={styles.checkboxContainer}>
@@ -154,6 +180,9 @@ export default function TaskListScreen({ route, navigation }) {
           />
         </TouchableOpacity>
         <Text style={styles.weekTitle}>{item.title}</Text>
+
+       
+
         <TouchableOpacity
           onPress={() =>
             navigation.navigate('OneWeek', {
@@ -170,21 +199,24 @@ export default function TaskListScreen({ route, navigation }) {
       </View>
 
       <ScrollView style={styles.taskList} nestedScrollEnabled>
-        {item.tasks.map((task, index) => (
-          <View key={index} style={styles.taskItem}>
-            <TouchableOpacity onPress={() => toggleTaskDone(item.id, index)}>
-              <Ionicons
-                name={task.done ? 'checkbox' : 'square-outline'}
-                size={20}
-                color={task.done ? '#4CAF50' : '#999'}
-              />
-            </TouchableOpacity>
-            <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>
-              {task.name}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
+  {item.tasks.map((task, index) => (
+    <View key={index} style={styles.taskItem}>
+      <TouchableOpacity onPress={() => toggleTaskDone(item.id, index)}>
+        <Ionicons
+          name={task.done ? 'checkbox' : 'square-outline'}
+          size={20}
+          color={task.done ? '#4CAF50' : '#999'}
+        />
+      </TouchableOpacity>
+      <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>
+        {task.name}
+      </Text>
+    </View>
+  ))}
+</ScrollView>
+       <TouchableOpacity onPress={() => openEditWeekModal(index)} style={styles.editButton}>
+      <Ionicons name="create-outline" size={20} color="#FF9800" />
+    </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -224,6 +256,7 @@ export default function TaskListScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
 
+          {/* Modal: Add Task */}
           <Modal visible={showModal} transparent animationType="slide">
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
@@ -240,6 +273,24 @@ export default function TaskListScreen({ route, navigation }) {
               </View>
             </View>
           </Modal>
+
+          {/* Modal: Edit Week Name */}
+          <Modal visible={editModalVisible} transparent animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>แก้ไขชื่อสัปดาห์</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editWeekNewName}
+                  onChangeText={setEditWeekNewName}
+                />
+                <TouchableOpacity style={styles.modalButton} onPress={updateWeekName}>
+                  <Text style={styles.modalButtonText}>บันทึก</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -265,10 +316,21 @@ const styles = StyleSheet.create({
   addWeekButton: { backgroundColor: '#4E342E', borderRadius: 10, padding: 10, marginLeft: 10 },
   controlRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   controlButton: { backgroundColor: '#4E342E', borderRadius: 30, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  modalContainer: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { backgroundColor: '#fff', margin: 40, borderRadius: 10, padding: 20 },
+  modalContainer: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)',  },
+  modalContent: { backgroundColor: '#fff', margin: 40, borderRadius: 10, padding: 10},
   modalTitle: { fontSize: 18, marginBottom: 10, fontWeight: 'bold' },
   modalInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10, marginBottom: 10 },
   modalButton: { backgroundColor: '#E58C39', padding: 10, borderRadius: 6, alignItems: 'center' },
   modalButtonText: { color: '#fff', fontWeight: 'bold' },
+  editButton: {
+  position: 'absolute',
+  bottom: 10,
+  right: 100,
+  backgroundColor: '#fff',
+  top: 5,
+  
+  
+},
+
+
 });

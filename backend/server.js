@@ -181,6 +181,32 @@ app.put('/api/tasks/:id/status', (req, res) => {
   );
 });
 
+// ✅ PUT /api/tasks/week-name - แก้ไขชื่อ week
+app.put('/api/tasks/week-name', (req, res) => {
+  const { oldWeekName, newWeekName, userId, folderId } = req.body;
+
+  if (!oldWeekName || !newWeekName || !userId || !folderId) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const sql = `
+    UPDATE tasks
+    SET week_name = ?
+    WHERE week_name = ? AND user_id = ? AND folder_id = ?
+  `;
+
+  db.query(sql, [newWeekName, oldWeekName, userId, folderId], (err, result) => {
+    if (err) {
+      console.error('❌ SQL Error (update week name):', err);
+      return res.status(500).json({ message: 'Failed to update week name' });
+    }
+
+    return res.status(200).json({ message: 'Week name updated successfully' });
+  });
+});
+
+
+
 // DELETE /api/tasks/week?weekName=...&userId=...&folderId=...
 app.delete('/api/tasks/week', (req, res) => {
   const { weekName, userId, folderId } = req.query;
@@ -229,6 +255,24 @@ app.post('/api/folders', (req, res) => {
     }
     res.status(200).json({ message: 'Folder added successfully', folderId: result.insertId });
   });
+});
+
+// PUT /api/folders/:id - แก้ไขชื่อโฟลเดอร์
+app.put('/api/folders/:id', (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+
+  db.query(
+    'UPDATE folders SET name = ? WHERE id = ?',
+    [name, id],
+    (err, result) => {
+      if (err) {
+        console.error('Error updating folder:', err);
+        return res.status(500).json({ message: 'Update failed' });
+      }
+      res.status(200).json({ message: 'Folder updated successfully' });
+    }
+  );
 });
 
 
