@@ -46,20 +46,33 @@ export default function DayTaskScreen({ route }) {
 }, []);
 
 
-  useEffect(() => {
-    const subscription = Accelerometer.addListener(accelerometerData => {
-      const totalForce = Math.sqrt(
-        Math.pow(accelerometerData.x, 2) +
-        Math.pow(accelerometerData.y, 2) +
-        Math.pow(accelerometerData.z, 2)
-      );
-      if (totalForce > 2.0) {
-        setMyWork([]);
-        Alert.alert('Deleted!', 'Puzzle ถูกลบหมดแล้ว!');
-      }
-    });
-    return () => subscription.remove();
-  }, []);
+ const SHAKE_THRESHOLD = 2.0;
+const SHAKE_COOLDOWN_MS = 2000; // 2 วินาที
+
+useEffect(() => {
+  let lastShakeTime = 0;
+
+  const subscription = Accelerometer.addListener(accelerometerData => {
+    const { x, y, z } = accelerometerData;
+    const totalForce = Math.sqrt(x * x + y * y + z * z);
+
+    const now = Date.now();
+
+    if (totalForce > SHAKE_THRESHOLD && now - lastShakeTime > SHAKE_COOLDOWN_MS) {
+      lastShakeTime = now;
+
+      setMyWork([]);
+      Alert.alert('Deleted!', 'Puzzle ถูกลบหมดแล้ว!');
+    }
+  });
+
+  // ตั้งค่าความถี่ในการอ่านข้อมูล accelerometer (ค่าต่ำลง = ประหยัดแบต/ประมวลผลน้อย)
+  Accelerometer.setUpdateInterval(300);
+
+  return () => {
+    subscription && subscription.remove();
+  };
+}, []);
 
   const handleAddBlock = (newBlock) => {
     setAddWork(prev => [...prev, { ...newBlock, id: Date.now().toString() }]);
