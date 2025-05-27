@@ -189,7 +189,7 @@ export default function TaskListScreen({ route, navigation }) {
           <View style={styles.addWeekContainer}>
             <TextInput
               style={[styles.weekInput, { flex: 1 }]}
-              placeholder="Enter Week Name"
+              placeholder="Enter Name"
               value={newWeekName}
               onChangeText={setNewWeekName}
             />
