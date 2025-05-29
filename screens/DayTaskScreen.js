@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, Vibration, ScrollView } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, Alert, Image,
+  Vibration, ScrollView, Platform
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AddBlockModal from './AddBlockModal';
 import { useNavigation } from '@react-navigation/native';
@@ -8,14 +11,15 @@ import * as Notifications from 'expo-notifications';
 import axios from 'axios';
 import { API_URL } from '../config';
 
-// ตั้งค่าให้แจ้งเตือนตอนแอปเปิดอยู่
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export default function DayTaskScreen({ route }) {
   const { dayName, userId, folderId, weekName } = route.params;
@@ -28,51 +32,43 @@ export default function DayTaskScreen({ route }) {
   ]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const notificationSettings = {
-  mode: 'sound', // หรือ 'shake'
-};
+  const notificationSettings = { mode: 'sound' }; // หรือ 'shake'
 
-
- useEffect(() => {
-  (async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      const { status: newStatus } = await Notifications.requestPermissionsAsync();
-      if (newStatus !== 'granted') {
-        Alert.alert('แจ้งเตือน', 'ไม่ได้รับสิทธิ์ให้ส่งการแจ้งเตือน');
-      }
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      (async () => {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status !== 'granted') {
+          const { status: newStatus } = await Notifications.requestPermissionsAsync();
+          if (newStatus !== 'granted') {
+            Alert.alert('แจ้งเตือน', 'ไม่ได้รับสิทธิ์ให้ส่งการแจ้งเตือน');
+          }
+        }
+      })();
     }
-  })();
-}, []);
+  }, []);
 
+  const SHAKE_THRESHOLD = 2.0;
+  const SHAKE_COOLDOWN_MS = 2000;
 
- const SHAKE_THRESHOLD = 2.0;
-const SHAKE_COOLDOWN_MS = 2000; // 2 วินาที
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      let lastShakeTime = 0;
 
-useEffect(() => {
-  let lastShakeTime = 0;
+      const subscription = Accelerometer.addListener(({ x, y, z }) => {
+        const totalForce = Math.sqrt(x * x + y * y + z * z);
+        const now = Date.now();
+        if (totalForce > SHAKE_THRESHOLD && now - lastShakeTime > SHAKE_COOLDOWN_MS) {
+          lastShakeTime = now;
+          setMyWork([]);
+          Alert.alert('Deleted!', 'Puzzle ถูกลบหมดแล้ว!');
+        }
+      });
 
-  const subscription = Accelerometer.addListener(accelerometerData => {
-    const { x, y, z } = accelerometerData;
-    const totalForce = Math.sqrt(x * x + y * y + z * z);
-
-    const now = Date.now();
-
-    if (totalForce > SHAKE_THRESHOLD && now - lastShakeTime > SHAKE_COOLDOWN_MS) {
-      lastShakeTime = now;
-
-      setMyWork([]);
-      Alert.alert('Deleted!', 'Puzzle ถูกลบหมดแล้ว!');
+      Accelerometer.setUpdateInterval(300);
+      return () => subscription.remove();
     }
-  });
-
-  // ตั้งค่าความถี่ในการอ่านข้อมูล accelerometer (ค่าต่ำลง = ประหยัดแบต/ประมวลผลน้อย)
-  Accelerometer.setUpdateInterval(300);
-
-  return () => {
-    subscription && subscription.remove();
-  };
-}, []);
+  }, []);
 
   const handleAddBlock = (newBlock) => {
     setAddWork(prev => [...prev, { ...newBlock, id: Date.now().toString() }]);
@@ -97,24 +93,24 @@ useEffect(() => {
 
       setTimeout(async () => {
         if (notificationSettings.mode === 'sound') {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '✅ Task Complete',
-              body: `Your task "${task.name}" is finished.`,
-              sound: true,
-            },
-            trigger: null,
-          });
+          if (Platform.OS !== 'web') {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: '✅ Task Complete',
+                body: `Your task "${task.name}" is finished.`,
+                sound: true,
+              },
+              trigger: null,
+            });
+          } else {
+            console.log(`🔔 Task "${task.name}" finished.`);
+          }
         } else if (notificationSettings.mode === 'shake') {
-          Vibration.vibrate();
+          if (Platform.OS !== 'web') {
+            Vibration.vibrate();
+          }
           Alert.alert('⏰ DONE!', `Task "${task.name}" finished!`);
         }
-
-        console.log('บันทึกข้อมูล:', {
-          name: task.name,
-          timer: task.timer,
-          finishedAt: new Date(),
-        });
       }, task.timer * 1000);
 
       return { ...task, started: true, done: false };

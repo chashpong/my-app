@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Modal, Alert, ScrollView, KeyboardAvoidingView,
   Platform, TouchableWithoutFeedback, Keyboard
 } from 'react-native';
@@ -15,7 +15,6 @@ export default function TaskListScreen({ route, navigation }) {
   const [showModal, setShowModal] = useState(false);
   const [newTask, setNewTask] = useState('');
   const [selectedWeekId, setSelectedWeekId] = useState(null);
-
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editWeekIndex, setEditWeekIndex] = useState(null);
   const [editWeekNewName, setEditWeekNewName] = useState('');
@@ -76,12 +75,6 @@ export default function TaskListScreen({ route, navigation }) {
       });
   };
 
-  const openAddTask = (id) => {
-    setSelectedWeekId(id);
-    setNewTask('');
-    setShowModal(true);
-  };
-
   const toggleTaskDone = (weekId, index) => {
     const updated = weeks.map(w => {
       if (w.id !== weekId) return w;
@@ -133,7 +126,7 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const renderWeekBox = ({ item, index }) => (
-    <TouchableOpacity style={styles.weekBox}>
+    <View style={styles.weekBox}>
       <View style={styles.weekHeaderRow}>
         <View style={styles.weekTitleRow}>
           <TouchableOpacity onPress={() => toggleSelectWeek(item.id)}>
@@ -166,26 +159,29 @@ export default function TaskListScreen({ route, navigation }) {
           </View>
         ))}
       </ScrollView>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{folderName}</Text>
+  <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{folderName}</Text>
 
-          <FlatList
-            data={weeks}
-            renderItem={renderWeekBox}
-            keyExtractor={item => item.id}
-            numColumns={1}
-            contentContainerStyle={styles.grid}
-          />
+        {/* ScrollView แสดงสัปดาห์ */}
+        <ScrollView
+          style={styles.scrollArea}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 10 }}
+        >
+          {weeks.map((item, index) => renderWeekBox({ item, index }))}
+        </ScrollView>
 
+        {/* แยกช่องกรอกชื่อ และปุ่ม เพิ่มสัปดาห์ออกมาชัดเจน */}
+        <View style={styles.bottomSection}>
           <View style={styles.addWeekContainer}>
             <TextInput
               style={[styles.weekInput, { flex: 1 }]}
@@ -203,12 +199,19 @@ export default function TaskListScreen({ route, navigation }) {
               <Ionicons name="trash" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
+        </View>
 
+          {/* Modal: Add Task */}
           <Modal visible={showModal} transparent animationType="slide">
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Add Task</Text>
-                <TextInput style={styles.modalInput} placeholder="Enter task" value={newTask} onChangeText={setNewTask} />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Enter task"
+                  value={newTask}
+                  onChangeText={setNewTask}
+                />
                 <TouchableOpacity style={styles.modalButton} onPress={addTaskToWeek}>
                   <Text style={styles.modalButtonText}>Add</Text>
                 </TouchableOpacity>
@@ -216,16 +219,27 @@ export default function TaskListScreen({ route, navigation }) {
             </View>
           </Modal>
 
+          {/* Modal: Edit Week */}
           <Modal visible={editModalVisible} transparent animationType="slide">
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>แก้ไขชื่อ</Text>
-                <TextInput style={styles.modalInput} value={editWeekNewName} onChangeText={setEditWeekNewName} />
+                <TextInput
+                  style={styles.modalInput}
+                  value={editWeekNewName}
+                  onChangeText={setEditWeekNewName}
+                />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#E58C39', flex: 1, marginRight: 5 }]} onPress={updateWeekName}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: '#E58C39', flex: 1, marginRight: 5 }]}
+                    onPress={updateWeekName}
+                  >
                     <Text style={styles.modalButtonText}>บันทึก</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#ccc', flex: 1, marginLeft: 5 }]} onPress={() => setEditModalVisible(false)}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: '#ccc', flex: 1, marginLeft: 5 }]}
+                    onPress={() => setEditModalVisible(false)}
+                  >
                     <Text style={[styles.modalButtonText, { color: '#000' }]}>ยกเลิก</Text>
                   </TouchableOpacity>
                 </View>
@@ -240,10 +254,10 @@ export default function TaskListScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#E58C39', padding: 16 },
+  scrollArea: { flex: 1 },
   backButton: { position: 'absolute', top: 50, left: 16, padding: 8, borderRadius: 30, zIndex: 10 },
   title: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginTop: 40, marginBottom: 10, color: '#4E342E' },
-  grid: { justifyContent: 'center', paddingHorizontal: 10 },
-  weekBox: { backgroundColor: '#FFF', borderRadius: 10, padding: 10, margin: 10, width: '80%', height: 150, elevation: 2 },
+  weekBox: { backgroundColor: '#FFF', borderRadius: 10, padding: 10, marginBottom: 10, minHeight: 150, elevation: 2 },
   weekHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   weekTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   editIcon: { marginLeft: 6, padding: 4 },
@@ -251,7 +265,7 @@ const styles = StyleSheet.create({
   addButtonText: { fontSize: 24, color: '#E58C39' },
   taskItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
   taskText: { fontSize: 14, color: '#000' },
-  taskList: { maxHeight: 80, marginTop: 5 },
+  taskList: { maxHeight: 100, marginTop: 5 },
   addWeekContainer: { flexDirection: 'row', marginTop: 20 },
   weekInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10 },
   addWeekButton: { backgroundColor: '#4E342E', borderRadius: 10, padding: 10, marginLeft: 10 },
