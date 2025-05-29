@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 export default function WelcomeScreen({ navigation }) {
@@ -14,10 +13,6 @@ export default function WelcomeScreen({ navigation }) {
         <Text style={styles.buttonText}>REGISTER</Text>
       </TouchableOpacity>
 
-      
-    
-
-      
     </View>
   );
 }
