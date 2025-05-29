@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
@@ -11,7 +12,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: '', // ใส่รหัสผ่าน MySQL
+  password: '', // ใส่รหัสผ่าน MySQL ของคุณ
   database: 'clear_planner',
 });
 
@@ -22,6 +23,91 @@ db.connect(err => {
     console.log('Connected to MySQL');
   }
 });
+
+// ฟังก์ชัน hash รหัสผ่าน
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+
+
+// ฟังก์ชันตรวจสอบ admin username และ password (hash ด้วย SHA-256)
+function authenticateUser(username, password) {
+  return new Promise((resolve, reject) => {
+    const hashedPassword = hashPassword(password);
+    const sql = 'SELECT * FROM admins WHERE username = ? AND password = ?';
+    db.query(sql, [username, hashedPassword], (err, results) => {
+      if (err) return reject(err);
+      if (results.length > 0) resolve(results[0]);
+      else resolve(null);
+    });
+  });
+}
+
+// Admin Login API
+app.post('/admin/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบ' });
+  }
+
+  try {
+    const user = await authenticateUser(username, password);
+    if (user) {
+      const token = crypto.randomBytes(16).toString('hex');
+      return res.json({
+        success: true,
+        user: { id: user.id, username: user.username },
+        token,
+      });
+    } else {
+      return res.json({ success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดภายในระบบ' });
+  }
+});
+
+// สมมติคุณใช้ Express และเชื่อมต่อ MySQL ด้วย mysql2 แล้วเหมือนโค้ดที่ส่งมา
+
+app.get('/admin/summary', (req, res) => {
+  const summary = {};
+
+  // นับจำนวนสัปดาห์ที่ไม่ซ้ำ
+  const totalWeeksQuery = `SELECT COUNT(DISTINCT week_name) AS totalWeeks FROM tasks`;
+  // นับจำนวนงานทั้งหมด
+  const totalTasksQuery = `SELECT COUNT(*) AS totalTasks FROM tasks`;
+  // นับจำนวนงานที่ยังไม่เสร็จ (status != 'done')
+  const pendingTasksQuery = `SELECT COUNT(*) AS pendingTasks FROM tasks WHERE status != 'done'`;
+  // นับจำนวนงานที่เสร็จแล้ว (status = 'done')
+  const completedTasksQuery = `SELECT COUNT(*) AS completedTasks FROM tasks WHERE status = 'done'`;
+
+  db.query(totalWeeksQuery, (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error counting weeks', error: err });
+    summary.totalWeeks = result[0].totalWeeks;
+
+    db.query(totalTasksQuery, (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error counting tasks', error: err });
+      summary.totalTasks = result[0].totalTasks;
+
+      db.query(pendingTasksQuery, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error counting pending tasks', error: err });
+        summary.pendingTasks = result[0].pendingTasks;
+
+        db.query(completedTasksQuery, (err, result) => {
+          if (err) return res.status(500).json({ message: 'Error counting completed tasks', error: err });
+          summary.completedTasks = result[0].completedTasks;
+
+          // ส่งข้อมูลสรุปทั้งหมดกลับ
+          res.status(200).json(summary);
+        });
+      });
+    });
+  });
+});
+
+
 
 // ✔️ Register
 app.post('/register', (req, res) => {
@@ -163,9 +249,12 @@ app.get('/api/tasks', (req, res) => {
       console.error('❌ Fetch Error:', err);
       return res.status(500).send('Error fetching tasks');
     }
+    console.log('Tasks fetched:', results);
     res.json(results);
   });
 });
+
+
 
 app.put('/api/tasks/:id/status', (req, res) => {
   const { id } = req.params;
@@ -180,6 +269,36 @@ app.put('/api/tasks/:id/status', (req, res) => {
     }
   );
 });
+
+// PUT /api/tasks/:id - แก้ไข task ทั้งหมด
+app.put('/api/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, status, weekName, dayName, folderId, userId, timerSeconds } = req.body;
+
+  const sql = `
+    UPDATE tasks SET
+      name = ?,
+      status = ?,
+      week_name = ?,
+      day_name = ?,
+      folder_id = ?,
+      user_id = ?,
+      timer_seconds = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [name, status, weekName, dayName, folderId, userId, timerSeconds, id], (err, result) => {
+    if (err) {
+      console.error('Error updating task:', err);
+      return res.status(500).json({ message: 'Error updating task' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json({ message: 'Task updated successfully' });
+  });
+});
+
 
 // ✅ PUT /api/tasks/week-name - แก้ไขชื่อ week
 app.put('/api/tasks/week-name', (req, res) => {
@@ -205,6 +324,20 @@ app.put('/api/tasks/week-name', (req, res) => {
   });
 });
 
+// ❌ DELETE /api/tasks/:id - ลบ task ตาม ID
+app.delete('/api/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM tasks WHERE id = ?', [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting task:', err);
+      return res.status(500).json({ message: 'Error deleting task' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json({ message: 'Task deleted successfully' });
+  });
+});
 
 
 // DELETE /api/tasks/week?weekName=...&userId=...&folderId=...
@@ -232,9 +365,13 @@ app.delete('/api/tasks/week', (req, res) => {
 // 📥 GET /api/folders?userId=...
 app.get('/api/folders', (req, res) => {
   const { userId } = req.query;
-  if (!userId) return res.status(400).json({ message: 'Missing userId' });
-
-  db.query('SELECT * FROM folders WHERE user_id = ?', [userId], (err, results) => {
+  let query = 'SELECT * FROM folders';
+  const params = [];
+  if (userId) {
+    query += ' WHERE user_id = ?';
+    params.push(userId);
+  }
+  db.query(query, params, (err, results) => {
     if (err) {
       console.error('Error fetching folders:', err);
       return res.status(500).json({ message: 'Error fetching folders' });
@@ -242,6 +379,7 @@ app.get('/api/folders', (req, res) => {
     res.status(200).json(results);
   });
 });
+
 
 // ➕ POST /api/folders
 app.post('/api/folders', (req, res) => {
@@ -287,6 +425,7 @@ app.delete('/api/folders/:id', (req, res) => {
     res.status(200).json({ message: 'Folder deleted successfully' });
   });
 });
+
 
 
 
