@@ -69,7 +69,7 @@ app.post('/admin/login', async (req, res) => {
   }
 });
 
-// สมมติคุณใช้ Express และเชื่อมต่อ MySQL ด้วย mysql2 แล้วเหมือนโค้ดที่ส่งมา
+
 
 app.get('/admin/summary', (req, res) => {
   const summary = {};
@@ -200,7 +200,7 @@ app.delete('/users/:id', (req, res) => {
 
 
 
-// ✅ เพิ่ม task ใหม่ (รองรับ week, day, user, folder)
+// ✅ เพิ่ม task ใหม่
 app.post('/api/tasks', (req, res) => {
   const { name, status, weekName, dayName, folderId, userId, timerSeconds } = req.body;
   console.log('BODY:', req.body);
@@ -301,9 +301,8 @@ app.put('/api/tasks/:id', (req, res) => {
   });
 });
 
-
-// ✅ PUT /api/tasks/week-name - แก้ไขชื่อ week
-app.put('/api/tasks/week-name', (req, res) => {
+//อัปเดตชื่อสัปดาห์ (week name)
+app.put('/api/tasks/', (req, res) => {
   const { oldWeekName, newWeekName, userId, folderId } = req.body;
 
   if (!oldWeekName || !newWeekName || !userId || !folderId) {
@@ -325,6 +324,8 @@ app.put('/api/tasks/week-name', (req, res) => {
     return res.status(200).json({ message: 'Week name updated successfully' });
   });
 });
+
+
 
 // ❌ DELETE /api/tasks/:id - ลบ task ตาม ID
 app.delete('/api/tasks/:id', (req, res) => {
