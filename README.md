@@ -80,7 +80,17 @@ CREATE TABLE tasks (
 );
 ```
 
-4. รัน backend server:
+4. ตาราง admin 
+```CREATE TABLE admins (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL
+);
+รหัสของ admin
+INSERT INTO admins (username, password) VALUES ('admin', 'admin123');
+
+```
+5. รัน backend server:
 ```bash
 node server.js
 ```

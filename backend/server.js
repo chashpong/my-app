@@ -74,38 +74,40 @@ app.post('/admin/login', async (req, res) => {
 app.get('/admin/summary', (req, res) => {
   const summary = {};
 
-  // นับจำนวนสัปดาห์ที่ไม่ซ้ำ
-  const totalWeeksQuery = `SELECT COUNT(DISTINCT week_name) AS totalWeeks FROM tasks`;
-  // นับจำนวนงานทั้งหมด
+  const totalFoldersQuery = `SELECT COUNT(*) AS totalFolders FROM folders`;
+  const totalUsersQuery = `SELECT COUNT(*) AS totalUsers FROM users`;
   const totalTasksQuery = `SELECT COUNT(*) AS totalTasks FROM tasks`;
-  // นับจำนวนงานที่ยังไม่เสร็จ (status != 'done')
   const pendingTasksQuery = `SELECT COUNT(*) AS pendingTasks FROM tasks WHERE status != 'done'`;
-  // นับจำนวนงานที่เสร็จแล้ว (status = 'done')
   const completedTasksQuery = `SELECT COUNT(*) AS completedTasks FROM tasks WHERE status = 'done'`;
 
-  db.query(totalWeeksQuery, (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error counting weeks', error: err });
-    summary.totalWeeks = result[0].totalWeeks;
+  db.query(totalFoldersQuery, (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error counting folders', error: err });
+    summary.totalFolders = result[0].totalFolders;
 
-    db.query(totalTasksQuery, (err, result) => {
-      if (err) return res.status(500).json({ message: 'Error counting tasks', error: err });
-      summary.totalTasks = result[0].totalTasks;
+    db.query(totalUsersQuery, (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error counting users', error: err });
+      summary.totalUsers = result[0].totalUsers;
 
-      db.query(pendingTasksQuery, (err, result) => {
-        if (err) return res.status(500).json({ message: 'Error counting pending tasks', error: err });
-        summary.pendingTasks = result[0].pendingTasks;
+      db.query(totalTasksQuery, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error counting tasks', error: err });
+        summary.totalTasks = result[0].totalTasks;
 
-        db.query(completedTasksQuery, (err, result) => {
-          if (err) return res.status(500).json({ message: 'Error counting completed tasks', error: err });
-          summary.completedTasks = result[0].completedTasks;
+        db.query(pendingTasksQuery, (err, result) => {
+          if (err) return res.status(500).json({ message: 'Error counting pending tasks', error: err });
+          summary.pendingTasks = result[0].pendingTasks;
 
-          // ส่งข้อมูลสรุปทั้งหมดกลับ
-          res.status(200).json(summary);
+          db.query(completedTasksQuery, (err, result) => {
+            if (err) return res.status(500).json({ message: 'Error counting completed tasks', error: err });
+            summary.completedTasks = result[0].completedTasks;
+
+            res.status(200).json(summary);
+          });
         });
       });
     });
   });
 });
+
 
 
 
@@ -339,8 +341,7 @@ app.delete('/api/tasks/:id', (req, res) => {
   });
 });
 
-
-// DELETE /api/tasks/week?weekName=...&userId=...&folderId=...
+/// DELETE /api/tasks/week?weekName=...&userId=...&folderId=...
 app.delete('/api/tasks/week', (req, res) => {
   const { weekName, userId, folderId } = req.query;
 
@@ -360,6 +361,9 @@ app.delete('/api/tasks/week', (req, res) => {
     }
   );
 });
+
+
+
 
 
 // 📥 GET /api/folders?userId=...

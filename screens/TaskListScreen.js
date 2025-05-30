@@ -20,6 +20,11 @@ export default function TaskListScreen({ route, navigation }) {
   const [editWeekNewName, setEditWeekNewName] = useState('');
 
   useEffect(() => {
+    fetchTasksGroupedByWeek();
+  }, [userId, folderId]);
+
+  // ฟังก์ชันดึงข้อมูล tasks แบ่งกลุ่มตาม week_name
+  const fetchTasksGroupedByWeek = () => {
     axios.get(`${API_URL}/api/tasks`, {
       params: { userId, folderId }
     })
@@ -36,7 +41,7 @@ export default function TaskListScreen({ route, navigation }) {
           });
         });
         const weeks = Object.keys(groupedByWeek).map((title, index) => ({
-          id: `w${index + 1}`,
+          id: `${title}_${index}`,   // สร้าง id ที่ไม่ซ้ำ
           title,
           tasks: groupedByWeek[title],
           selected: false,
@@ -47,20 +52,23 @@ export default function TaskListScreen({ route, navigation }) {
         console.error('Error fetching tasks:', error);
         Alert.alert('โหลดงานล้มเหลว');
       });
-  }, [userId, folderId]);
+  };
 
+  // เพิ่มสัปดาห์ใหม่ (frontend)
   const addWeek = () => {
     if (!newWeekName.trim()) return;
-    const newId = Date.now().toString();
+    const newId = `${newWeekName}_${Date.now()}`;
     setWeeks([...weeks, { id: newId, title: newWeekName, tasks: [], selected: false }]);
     setNewWeekName('');
     Keyboard.dismiss();
   };
 
+  // เลือก/ไม่เลือกสัปดาห์สำหรับลบ
   const toggleSelectWeek = (id) => {
     setWeeks(weeks.map(w => w.id === id ? { ...w, selected: !w.selected } : w));
   };
 
+  // ลบสัปดาห์แบบกลุ่มโดยส่งชื่อสัปดาห์ (weekName) ไป backend
   const deleteSelectedWeeks = () => {
     const toDelete = weeks.filter(w => w.selected);
     if (!toDelete.length) return Alert.alert('แจ้งเตือน', 'โปรดเลือกสัปดาห์ที่ต้องการลบ');
@@ -68,18 +76,35 @@ export default function TaskListScreen({ route, navigation }) {
     Promise.all(toDelete.map(w => axios.delete(`${API_URL}/api/tasks/week`, {
       params: { weekName: w.title, userId, folderId }
     })))
-      .then(() => setWeeks(weeks.filter(w => !w.selected)))
+      .then(() => {
+        setWeeks(weeks.filter(w => !w.selected));
+      })
       .catch(err => {
         console.error('❌ Error deleting weeks:', err);
         Alert.alert('Error', 'ไม่สามารถลบสัปดาห์ได้');
       });
   };
 
-  const toggleTaskDone = (weekId, index) => {
+  // ลบ task ทีละตัวตาม id
+  const deleteTaskById = (taskId) => {
+    if (!taskId) return;
+    axios.delete(`${API_URL}/api/tasks/${taskId}`)
+      .then(() => {
+        // โหลดข้อมูลใหม่หลังลบ
+        fetchTasksGroupedByWeek();
+      })
+      .catch(err => {
+        console.error('Error deleting task:', err);
+        Alert.alert('ลบงานไม่สำเร็จ');
+      });
+  };
+
+  // เปลี่ยนสถานะ task done/not done
+  const toggleTaskDone = (weekId, taskIndex) => {
     const updated = weeks.map(w => {
       if (w.id !== weekId) return w;
       const updatedTasks = w.tasks.map((t, i) => {
-        if (i !== index) return t;
+        if (i !== taskIndex) return t;
         const newStatus = t.done ? 'todo' : 'done';
         axios.put(`${API_URL}/api/tasks/${t.id}/status`, { status: newStatus })
           .catch(err => console.error('❌ Error updating status:', err));
@@ -91,6 +116,7 @@ export default function TaskListScreen({ route, navigation }) {
     Alert.alert('อัปเดตสำเร็จ', 'เปลี่ยนสถานะงานแล้ว');
   };
 
+  // เพิ่มงานในสัปดาห์ (frontend)
   const addTaskToWeek = () => {
     if (!newTask.trim()) return;
     setWeeks(weeks.map(w =>
@@ -101,12 +127,14 @@ export default function TaskListScreen({ route, navigation }) {
     setShowModal(false);
   };
 
+  // เปิด modal แก้ไขชื่อสัปดาห์
   const openEditWeekModal = (index) => {
     setEditWeekIndex(index);
     setEditWeekNewName(weeks[index].title);
     setEditModalVisible(true);
   };
 
+  // อัพเดตชื่อสัปดาห์ที่ backend
   const updateWeekName = () => {
     const oldName = weeks[editWeekIndex].title;
     axios.put(`${API_URL}/api/tasks/week-name`, {
@@ -126,12 +154,10 @@ export default function TaskListScreen({ route, navigation }) {
   };
 
   const renderWeekBox = ({ item, index }) => (
-    <View style={styles.weekBox}>
+    <View style={styles.weekBox} key={item.id}>
       <View style={styles.weekHeaderRow}>
         <View style={styles.weekTitleRow}>
-          <TouchableOpacity onPress={() => toggleSelectWeek(item.id)}>
-            <Ionicons name={item.selected ? 'checkbox' : 'square-outline'} size={20} color={item.selected ? '#FF9800' : '#999'} />
-          </TouchableOpacity>
+         
           <Text style={styles.weekTitle}>{item.title}</Text>
           <TouchableOpacity onPress={() => openEditWeekModal(index)} style={styles.editIcon}>
             <Ionicons name="create-outline" size={18} color="#FF9800" />
@@ -151,11 +177,17 @@ export default function TaskListScreen({ route, navigation }) {
 
       <ScrollView style={styles.taskList} nestedScrollEnabled>
         {item.tasks.map((task, i) => (
-          <View key={i} style={styles.taskItem}>
+          <View key={task.id} style={styles.taskItem}>
             <TouchableOpacity onPress={() => toggleTaskDone(item.id, i)}>
               <Ionicons name={task.done ? 'checkbox' : 'square-outline'} size={20} color={task.done ? '#4CAF50' : '#999'} />
             </TouchableOpacity>
-            <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>{task.name}</Text>
+            <Text style={[styles.taskText, task.done && { textDecorationLine: 'line-through', color: 'gray' }]}>
+              {task.name}
+            </Text>
+            {/* ปุ่มลบ task ทีละตัว */}
+            <TouchableOpacity onPress={() => deleteTaskById(task.id)} style={{ marginLeft: 'auto' }}>
+              <Ionicons name="trash-outline" size={20} color="#E53935" />
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
@@ -163,89 +195,39 @@ export default function TaskListScreen({ route, navigation }) {
   );
 
   return (
-  <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>{folderName}</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomeScreen', { userId })} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>{folderName}</Text>
 
-        {/* ScrollView แสดงสัปดาห์ */}
-        <ScrollView
-          style={styles.scrollArea}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 10 }}
-        >
-          {weeks.map((item, index) => renderWeekBox({ item, index }))}
-        </ScrollView>
+          <ScrollView
+            style={styles.scrollArea}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 10 }}
+          >
+            {weeks.map((item, index) => renderWeekBox({ item, index }))}
+          </ScrollView>
 
-        {/* แยกช่องกรอกชื่อ และปุ่ม เพิ่มสัปดาห์ออกมาชัดเจน */}
-        <View style={styles.bottomSection}>
-          <View style={styles.addWeekContainer}>
-            <TextInput
-              style={[styles.weekInput, { flex: 1 }]}
-              placeholder="Enter Name"
-              value={newWeekName}
-              onChangeText={setNewWeekName}
-            />
-            <TouchableOpacity onPress={addWeek} style={styles.addWeekButton}>
-              <Ionicons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.controlRow}>
-            <TouchableOpacity style={styles.controlButton} onPress={deleteSelectedWeeks}>
-              <Ionicons name="trash" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-          {/* Modal: Add Task */}
-          <Modal visible={showModal} transparent animationType="slide">
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Add Task</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="Enter task"
-                  value={newTask}
-                  onChangeText={setNewTask}
-                />
-                <TouchableOpacity style={styles.modalButton} onPress={addTaskToWeek}>
-                  <Text style={styles.modalButtonText}>Add</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.bottomSection}>
+            <View style={styles.addWeekContainer}>
+              <TextInput
+                style={[styles.weekInput, { flex: 1 }]}
+                placeholder="Enter Name"
+                value={newWeekName}
+                onChangeText={setNewWeekName}
+              />
+              <TouchableOpacity onPress={addWeek} style={styles.addWeekButton}>
+                <Ionicons name="add" size={24} color="#fff" />
+              </TouchableOpacity>
             </View>
-          </Modal>
 
-          {/* Modal: Edit Week */}
-          <Modal visible={editModalVisible} transparent animationType="slide">
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>แก้ไขชื่อ</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={editWeekNewName}
-                  onChangeText={setEditWeekNewName}
-                />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#E58C39', flex: 1, marginRight: 5 }]}
-                    onPress={updateWeekName}
-                  >
-                    <Text style={styles.modalButtonText}>บันทึก</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#ccc', flex: 1, marginLeft: 5 }]}
-                    onPress={() => setEditModalVisible(false)}
-                  >
-                    <Text style={[styles.modalButtonText, { color: '#000' }]}>ยกเลิก</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+            <View style={styles.controlRow}>
+              
             </View>
-          </Modal>
+          </View>
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -269,7 +251,7 @@ const styles = StyleSheet.create({
   addWeekContainer: { flexDirection: 'row', marginTop: 20 },
   weekInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10 },
   addWeekButton: { backgroundColor: '#4E342E', borderRadius: 10, padding: 10, marginLeft: 10 },
-  controlRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  
   controlButton: { backgroundColor: '#4E342E', borderRadius: 30, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 3 },
   modalContainer: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalContent: { backgroundColor: '#fff', margin: 40, borderRadius: 10, padding: 10 },
