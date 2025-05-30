@@ -81,7 +81,8 @@ CREATE TABLE tasks (
 ```
 
 4. ตาราง admin 
-```CREATE TABLE admins (
+```
+  CREATE TABLE admins (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL
