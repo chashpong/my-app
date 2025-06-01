@@ -80,7 +80,7 @@ CREATE TABLE tasks (
 );
 ```
 
-4. ตาราง admin 
+4. ตาราง admin :
 ```
   CREATE TABLE admins (
   id INT AUTO_INCREMENT PRIMARY KEY,
